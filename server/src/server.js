@@ -2,6 +2,8 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import http from 'http'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { Server } from 'socket.io'
 import { connectDB } from './config/db.js'
 import { verifySocketToken } from './middleware/auth.js'
@@ -16,9 +18,15 @@ import contentRoutes from './routes/content.js'
 import cartRoutes from './routes/cart.js'
 import wishlistRoutes from './routes/wishlist.js'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 const app = express()
 
-const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
+const isProd = process.env.NODE_ENV === 'production'
+const corsOrigin = isProd
+  ? process.env.CORS_ORIGIN || process.env.RENDER_EXTERNAL_URL || '*'
+  : process.env.CORS_ORIGIN || 'http://localhost:5173'
 app.use(cors({ origin: corsOrigin, credentials: true }))
 app.use(express.json({ limit: '12mb' }))
 app.use(rateLimit({ windowMs: 60000, max: 200, message: 'Too many requests' }))
@@ -36,6 +44,12 @@ app.use('/api/wishlist', wishlistRoutes)
 
 app.use('/api', (_req, res) => {
   res.status(404).json({ message: 'API route not found' })
+})
+
+const clientDist = path.resolve(__dirname, '../../client/dist')
+app.use(express.static(clientDist))
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'))
 })
 
 app.use((err, _req, res, _next) => {

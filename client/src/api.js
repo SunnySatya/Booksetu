@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const BASE = import.meta.env.VITE_API_URL || ''
 
 export const getToken = () => localStorage.getItem('bs_token')
 export const setToken = (t) =>
