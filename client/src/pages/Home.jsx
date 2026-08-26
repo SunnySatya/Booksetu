@@ -56,6 +56,7 @@ const Home = () => {
   const [submitted, setSubmitted] = useState("");
   const {
     status: locStatus,
+    value: userLocation,
     request: locateMe,
   } = useGeolocation();
   const [payBook, setPayBook] = useState(null);
