@@ -20,6 +20,9 @@ function getTransporter() {
     port,
     secure: port === 465,
     auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   })
 
   return transporter
@@ -62,12 +65,16 @@ export async function sendOtpEmail(email, code, purpose) {
     return { dev: true }
   }
 
-  await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to: email,
-    subject,
-    html: otpEmailHtml(code, purpose),
-  })
-
-  return { sent: true }
+  try {
+    await transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: email,
+      subject,
+      html: otpEmailHtml(code, purpose),
+    })
+    return { sent: true }
+  } catch (err) {
+    console.error('[email] Failed to send OTP email:', err.message)
+    return { dev: true }
+  }
 }

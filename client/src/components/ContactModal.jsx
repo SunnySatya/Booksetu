@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Send, MapPin, MessageCircle, Phone, Tag, Check } from "lucide-react";
+import { X, Send, MapPin, MessageCircle, Phone, Tag, Check, Trash2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "./Toast";
 import useChat from "../hooks/useChat";
 import { addNotification } from "../utils/notificationStore";
-import { makeConvId, sendMessage, setOfferStatus } from "../utils/chatStore";
+import { makeConvId, sendMessage, setOfferStatus, deleteConversationByKey } from "../utils/chatStore";
 
 function ContactModal({ book, onClose }) {
   const { user } = useAuth();
@@ -22,6 +22,7 @@ function ContactModal({ book, onClose }) {
   const [offerMode, setOfferMode] = useState(false);
   const [offerPrice, setOfferPrice] = useState("");
   const [viewer, setViewer] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const listRef = useRef(null);
   const inputRef = useRef(null);
@@ -89,6 +90,20 @@ function ContactModal({ book, onClose }) {
     }
   };
 
+  const handleDeleteChat = async () => {
+    if (!window.confirm("Delete this chat? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      await deleteConversationByKey(convId);
+      toast("Chat deleted");
+      onClose();
+    } catch {
+      toast("Failed to delete chat", "error");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
     <div
@@ -108,9 +123,17 @@ function ContactModal({ book, onClose }) {
             </p>
           </div>
           <button
+            onClick={handleDeleteChat}
+            disabled={deleting}
+            aria-label="Delete chat"
+            className="shrink-0 w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          <button
             onClick={onClose}
             aria-label="Close"
-            className="shrink-0 ml-2 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+            className="shrink-0 ml-1 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

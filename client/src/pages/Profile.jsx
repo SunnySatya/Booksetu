@@ -3,10 +3,10 @@ import { useAuth } from '../context/AuthContext'
 import { useShop } from '../context/ShopContext'
 import { useToast } from '../components/Toast'
 import { getListingsBySeller } from '../utils/listingStore'
-import { getAllConversations } from '../utils/chatStore'
+import { getAllConversations, deleteConversationByKey } from '../utils/chatStore'
 import {
   User, Mail, Calendar, BookOpen, TrendingUp, Settings,
-  LogOut, Phone, MapPin, Check, MessageCircle, ShoppingCart, ArrowRight,
+  LogOut, Phone, MapPin, Check, MessageCircle, ShoppingCart, ArrowRight, Trash2, Loader2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import ContactModal from '../components/ContactModal'
@@ -40,6 +40,7 @@ const Profile = () => {
   const [activeListings, setActiveListings] = useState(0)
   const [chatBook, setChatBook] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [deletingChatKey, setDeletingChatKey] = useState(null)
 
   useEffect(() => {
     let alive = true
@@ -87,6 +88,20 @@ const Profile = () => {
     getAllConversations()
       .then(setChats)
       .catch(() => {})
+  }
+
+  const handleDeleteChat = async (convKey, title) => {
+    if (!window.confirm(`Delete chat for "${title}"? This cannot be undone.`)) return
+    setDeletingChatKey(convKey)
+    try {
+      await deleteConversationByKey(convKey)
+      setChats((prev) => prev.filter((c) => c.key !== convKey))
+      toast('Chat deleted')
+    } catch {
+      toast('Failed to delete chat', 'error')
+    } finally {
+      setDeletingChatKey(null)
+    }
   }
 
   const scrollTo = (id) => () =>
@@ -179,28 +194,42 @@ const Profile = () => {
               ) : (
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {chats.map((c) => (
-                    <button
-                      key={c.key}
-                      type="button"
-                      onClick={() => setChatBook({ title: c.title, seller: c.seller })}
-                      className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-emerald-50 rounded-xl transition-colors text-left"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                        <span className="font-bold text-emerald-700 text-sm">
-                          {(c.seller || 'S').charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{c.title}</p>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                          <span className="font-medium text-emerald-700">{c.seller}</span> • {previewOf(c.last)}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-[11px] text-gray-400">{timeOf(c.last?.at)}</p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">{c.count ?? c.msgCount} msgs</p>
-                      </div>
-                    </button>
+                    <div key={c.key} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-emerald-50 rounded-xl transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => setChatBook({ title: c.title, seller: c.seller })}
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                          <span className="font-bold text-emerald-700 text-sm">
+                            {(c.seller || 'S').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{c.title}</p>
+                          <p className="text-xs text-gray-500 truncate mt-0.5">
+                            <span className="font-medium text-emerald-700">{c.seller}</span> • {previewOf(c.last)}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-[11px] text-gray-400">{timeOf(c.last?.at)}</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{c.count ?? c.msgCount} msgs</p>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteChat(c.key, c.title)}
+                        disabled={deletingChatKey === c.key}
+                        className="shrink-0 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        title="Delete chat"
+                      >
+                        {deletingChatKey === c.key ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}

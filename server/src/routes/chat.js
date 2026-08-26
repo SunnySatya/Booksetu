@@ -76,7 +76,7 @@ router.patch('/messages/:id/status', authRequired, async (req, res) => {
   }
 })
 
-router.delete('/conversation', adminRequired, async (req, res) => {
+router.delete('/conversation', authRequired, async (req, res) => {
   try {
     const { key } = req.query
     if (!key) return res.status(400).json({ message: 'key required' })
