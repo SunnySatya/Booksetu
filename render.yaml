@@ -3,7 +3,7 @@ services:
     name: booksetu
     runtime: node
     plan: free
-    buildCommand: npm install --prefix server && cd client && npm install && node node_modules/.bin/vite build
+    buildCommand: cd server && npm install && cd ../client && npm install && chmod +x node_modules/.bin/vite && npm run build
     startCommand: cd server && node src/server.js
     envVars:
       - key: NODE_ENV
