@@ -13,10 +13,12 @@ import {
   DEFAULT_HERO_IMAGES,
   getCustomHeroImages,
   saveHeroImages,
+  getCategoryImages,
+  saveCategoryImages,
   getCustomQuotes,
   saveQuotes,
 } from '../utils/contentStore'
-import { quotes as defaultQuotes } from '../data/homeData'
+import { quotes as defaultQuotes, categories as allCategories } from '../data/homeData'
 import {
   getAllListings,
   updateListing,
@@ -110,9 +112,11 @@ const Admin = () => {
   const [chatBook, setChatBook] = useState(null)
   const [notifForm, setNotifForm] = useState({ title: '', body: '', kind: 'admin' })
   const [heroImgs, setHeroImgs] = useState(null)
+  const [catImgs, setCatImgs] = useState({})
   const [quoteList, setQuoteList] = useState([...defaultQuotes])
   const [newQuote, setNewQuote] = useState({ text: '', author: '' })
   const [photoBusy, setPhotoBusy] = useState(false)
+  const [catPhotoBusy, setCatPhotoBusy] = useState(false)
 
   const refresh = () => setVersion((v) => v + 1)
 
@@ -126,12 +130,13 @@ const Admin = () => {
     let alive = true
     ;(async () => {
       try {
-        const [ls, us, cs, ns, hero, quotesStored] = await Promise.all([
+        const [ls, us, cs, ns, hero, catImages, quotesStored] = await Promise.all([
           getAllListings(),
           getUsers(),
           getAllConversations(),
           getNotifications(),
           getCustomHeroImages(),
+          getCategoryImages(),
           getCustomQuotes(),
         ])
         if (!alive) return
@@ -140,6 +145,7 @@ const Admin = () => {
         setChats(cs)
         setNotifs(ns)
         setHeroImgs(hero)
+        setCatImgs(catImages || {})
         setQuoteList(quotesStored || [...defaultQuotes])
       } catch {}
     })()
@@ -239,6 +245,41 @@ const Admin = () => {
     saveHeroImages(null)
     refresh()
     toast('Default slider images restored', 'info')
+  }
+
+  const handleAddCatPhotos = async (catName, e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (!files.length) return
+    setCatPhotoBusy(true)
+    const resized = []
+    for (const f of files.slice(0, 4)) {
+      try {
+        resized.push(await fileToResizedDataUrl(f, 800, 0.75))
+      } catch {
+        toast('Failed to read one image', 'error')
+      }
+    }
+    const existing = catImgs[catName] || []
+    const next = [...existing, ...resized].slice(0, 4)
+    setCatImgs((prev) => ({ ...prev, [catName]: next }))
+    await saveCategoryImages(catName, next)
+    setCatPhotoBusy(false)
+    toast(`${catName} images updated`)
+  }
+
+  const removeCatImage = async (catName, idx) => {
+    const existing = catImgs[catName] || []
+    const next = existing.filter((_, i) => i !== idx)
+    const updated = { ...catImgs }
+    if (next.length === 0) {
+      delete updated[catName]
+    } else {
+      updated[catName] = next
+    }
+    setCatImgs(updated)
+    await saveCategoryImages(catName, next)
+    toast('Image removed', 'info')
   }
 
   const persistQuotes = (list) => {
@@ -681,6 +722,60 @@ const Admin = () => {
                 <Plus className="w-4 h-4" /> Upload Images
                 <input type="file" accept="image/*" multiple className="hidden" onChange={handleAddHeroPhotos} />
               </label>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <LayoutGrid className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-lg font-bold text-gray-900">Category Images</h3>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">
+                Upload up to 4 images per category. These show in the category slider on the home page.
+              </p>
+              {catPhotoBusy && (
+                <p className="text-xs text-emerald-600 mb-3 animate-pulse">Processing photos...</p>
+              )}
+              <div className="space-y-5">
+                {allCategories.map((cat) => {
+                  const imgs = catImgs[cat.name] || []
+                  return (
+                    <div key={cat.name}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold text-gray-700">{cat.name}</h4>
+                        <span className="text-xs text-gray-400">{imgs.length}/4 images</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {imgs.map((src, i) => (
+                          <div key={i} className="relative rounded-xl overflow-hidden ring-1 ring-gray-200 group">
+                            <img src={src} alt={`${cat.name} ${i + 1}`} className="w-full aspect-square object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeCatImage(cat.name, i)}
+                              aria-label={`Remove ${cat.name} image ${i + 1}`}
+                              className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        {imgs.length < 4 && (
+                          <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/40 flex flex-col items-center justify-center gap-1 cursor-pointer text-gray-400 hover:text-emerald-600 transition-colors">
+                            <Plus className="w-6 h-6" />
+                            <span className="text-xs font-medium">Add</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => handleAddCatPhotos(cat.name, e)}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 p-6">

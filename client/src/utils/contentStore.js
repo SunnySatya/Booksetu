@@ -12,6 +12,7 @@ const dispatchUpdate = () =>
 
 const mapContent = (d) => ({
   heroImages: Array.isArray(d?.heroImages) && d.heroImages.length ? d.heroImages : null,
+  categoryImages: d?.categoryImages && typeof d.categoryImages === 'object' ? d.categoryImages : {},
   quotes: Array.isArray(d?.quotes) && d.quotes.length ? d.quotes : null,
 })
 
@@ -22,6 +23,23 @@ export const getCustomHeroImages = async () => {
 
 export const saveHeroImages = async (arr) => {
   await api.put('/content', { heroImages: arr || [] })
+  dispatchUpdate()
+}
+
+export const getCategoryImages = async () => {
+  const data = mapContent(await api.get('/content'))
+  return data.categoryImages
+}
+
+export const saveCategoryImages = async (catName, arr) => {
+  const current = await getCategoryImages()
+  const next = { ...current }
+  if (arr && arr.length > 0) {
+    next[catName] = arr
+  } else {
+    delete next[catName]
+  }
+  await api.put('/content', { categoryImages: next })
   dispatchUpdate()
 }
 

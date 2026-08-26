@@ -19,6 +19,7 @@ import {
   DEFAULT_HERO_IMAGES,
   getCustomHeroImages,
   getCustomQuotes,
+  getCategoryImages,
   CONTENT_EVENT,
 } from "../utils/contentStore";
 import { useAuth } from "../context/AuthContext";
@@ -54,6 +55,7 @@ const Home = () => {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
+  const [catImgMap, setCatImgMap] = useState({});
   const {
     status: locStatus,
     value: userLocation,
@@ -103,6 +105,9 @@ const Home = () => {
     getCustomQuotes()
       .then((qs) => alive && qs && setQuotesList(qs))
       .catch(() => {});
+    getCategoryImages()
+      .then((ci) => alive && ci && setCatImgMap(ci))
+      .catch(() => {});
     return () => {
       alive = false;
     };
@@ -111,12 +116,14 @@ const Home = () => {
   useEffect(() => {
     const refresh = async () => {
       try {
-        const [imgs, qs] = await Promise.all([
+        const [imgs, qs, ci] = await Promise.all([
           getCustomHeroImages(),
           getCustomQuotes(),
+          getCategoryImages(),
         ]);
         setHeroImgSrcs(imgs || DEFAULT_HERO_IMAGES);
         setQuotesList(qs || quotes);
+        setCatImgMap(ci || {});
         setHeroImgIdx(0);
         setQuoteIndex(0);
       } catch {}
@@ -239,6 +246,14 @@ const Home = () => {
   const categoryResults = activeCategory
     ? allCategoryBooks.filter((b) => b.category === activeCategory)
     : [];
+
+  const displayCategories = categories.map((cat) => {
+    const custom = catImgMap[cat.name];
+    if (custom && custom.length > 0) {
+      return { ...cat, slides: custom };
+    }
+    return cat;
+  });
 
   return (
     <div>
@@ -453,7 +468,7 @@ const Home = () => {
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-8">
-            {categories.map((cat) => (
+            {displayCategories.map((cat) => (
               <CategorySlider
                 key={cat.name}
                 cat={cat}

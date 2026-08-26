@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 const appContentSchema = new mongoose.Schema({
   key: { type: String, unique: true, default: 'main' },
   heroImages: { type: [String], default: [] },
+  categoryImages: { type: Map, of: [String], default: {} },
   quotes: [
     {
       _id: false,
