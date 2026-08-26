@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import http from 'http'
 import path from 'path'
+import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { Server } from 'socket.io'
 import { connectDB } from './config/db.js'
@@ -47,9 +48,17 @@ app.use('/api', (_req, res) => {
 })
 
 const clientDist = path.resolve(__dirname, '../../client/dist')
-app.use(express.static(clientDist))
+const hasDist = fs.existsSync(clientDist)
+if (hasDist) {
+  app.use(express.static(clientDist))
+}
 app.get('*', (_req, res) => {
-  res.sendFile(path.join(clientDist, 'index.html'))
+  const indexPath = path.join(clientDist, 'index.html')
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath)
+  } else {
+    res.status(200).send('<h1>BookSetu is building... Please refresh in 1 minute.</h1>')
+  }
 })
 
 app.use((err, _req, res, _next) => {
@@ -79,6 +88,7 @@ const PORT = process.env.PORT || 5000
 
 try {
   await connectDB()
+  console.log('[server] client dist exists:', fs.existsSync(clientDist), clientDist)
   server.listen(PORT, () => {
     console.log(`[server] BookSetu API running on http://localhost:${PORT}`)
   })
