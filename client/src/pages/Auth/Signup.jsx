@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { UserPlus, Mail, Lock, User, MapPin, ShieldCheck, Loader2 } from 'lucide-react'
+import { UserPlus, Mail, Lock, User, MapPin, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { validateName, validateEmail, validatePassword, validateConfirm, passwordStrength } from '../../utils/validation'
 import { sendOtp, verifyOtp } from '../../utils/otp'
@@ -11,7 +11,9 @@ const Signup = () => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
   const [confirm, setConfirm] = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
   const [errors, setErrors] = useState({})
   const [otp, setOtp] = useState('')
   const [otpError, setOtpError] = useState('')
@@ -177,12 +179,15 @@ const Signup = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type="password"
+                    type={showPwd ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${errors.password ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full pl-10 pr-11 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${errors.password ? 'border-red-400' : 'border-gray-300'}`}
                     placeholder="Min 8 chars, 1 uppercase & 1 number"
                   />
+                  <button type="button" tabIndex={-1} onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
                 {password && (
                   <div className="flex items-center gap-2 mt-2">
@@ -202,12 +207,15 @@ const Signup = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type="password"
+                    type={showConfirm ? 'text' : 'password'}
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${errors.confirm ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full pl-10 pr-11 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${errors.confirm ? 'border-red-400' : 'border-gray-300'}`}
                     placeholder="Re-enter your password"
                   />
+                  <button type="button" tabIndex={-1} onClick={() => setShowConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
                 {errors.confirm && <p className="mt-1.5 text-sm text-red-600">{errors.confirm}</p>}
               </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { LogIn, Mail, Lock, MapPin } from 'lucide-react'
+import { LogIn, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { validateEmail, validatePassword } from '../../utils/validation'
 import { useToast } from '../../components/Toast'
@@ -8,6 +8,7 @@ import { useToast } from '../../components/Toast'
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
   const [errors, setErrors] = useState({})
   const [showLocPopup, setShowLocPopup] = useState(false)
   const [locating, setLocating] = useState(false)
@@ -84,12 +85,15 @@ const Login = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type="password"
+                    type={showPwd ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${errors.password ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full pl-10 pr-11 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${errors.password ? 'border-red-400' : 'border-gray-300'}`}
                     placeholder="Enter your password"
                   />
+                  <button type="button" tabIndex={-1} onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
                 {errors.password && <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>}
               </div>

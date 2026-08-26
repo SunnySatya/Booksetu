@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   Megaphone, Send, Trash2, ArrowLeft, BookOpen, Users as UsersIcon,
   MessageCircle, Bell, LayoutGrid, Pencil, ShieldCheck, AlertTriangle, X,
-  Image as ImageIcon, Plus, RotateCcw,
+  Image as ImageIcon, Plus, RotateCcw, Eye, EyeOff,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
@@ -68,6 +68,7 @@ const StatCard = ({ icon: Icon, color, value, label }) => (
 
 const AdminGate = ({ onSuccess }) => {
   const [pwd, setPwd] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
   const toast = useToast()
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -84,13 +85,18 @@ const AdminGate = ({ onSuccess }) => {
             else toast('Wrong password', 'error')
           }}
         >
-          <input
-            type="password"
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-            placeholder="Admin password"
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white text-sm mb-3"
-          />
+          <div className="relative">
+            <input
+              type={showPwd ? 'text' : 'password'}
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              placeholder="Admin password"
+              className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white text-sm mb-3"
+            />
+            <button type="button" tabIndex={-1} onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 mb-3">
+              {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
           <button type="submit" className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 transition-colors">
             Enter Dashboard
           </button>
