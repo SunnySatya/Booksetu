@@ -10,9 +10,11 @@ async function request(path, { method = 'GET', body } = {}) {
   const token = getToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
+  const apiPath = path.startsWith('/api') ? path : `/api${path}`
+
   let res
   try {
-    res = await fetch(`${BASE}${path}`, {
+    res = await fetch(`${BASE}${apiPath}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
