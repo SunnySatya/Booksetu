@@ -21,6 +21,17 @@ function ContactModal({ book, onClose }) {
   const messages = useChat(convId);
   const prevCountRef = useRef(0);
 
+  // Fallback: if sellerEmail is empty, try to detect from messages
+  const effectiveRole = (() => {
+    if (sellerEmail) return role;
+    if (!user?.email) return role;
+    const senderMatch = messages.find((m) => m.senderEmail === user.email);
+    if (senderMatch) {
+      return senderMatch.from;
+    }
+    return role;
+  })();
+
   const [draft, setDraft] = useState("");
   const [offerMode, setOfferMode] = useState(false);
   const [offerPrice, setOfferPrice] = useState("");
@@ -39,7 +50,7 @@ function ContactModal({ book, onClose }) {
   useEffect(() => {
     if (messages.length > prevCountRef.current && prevCountRef.current > 0) {
       const newMsg = messages[messages.length - 1];
-      if (newMsg && newMsg.from !== role) {
+      if (newMsg && newMsg.from !== effectiveRole) {
         if (document.hidden || !document.hasFocus()) {
           if ("Notification" in window && Notification.permission === "granted") {
             new Notification("BookSetu — New Message", {
@@ -51,7 +62,7 @@ function ContactModal({ book, onClose }) {
       }
     }
     prevCountRef.current = messages.length;
-  }, [messages, role]);
+  }, [messages, effectiveRole]);
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -67,11 +78,12 @@ function ContactModal({ book, onClose }) {
       bookTitle: book.title,
       seller: book.seller,
       sellerEmail: sellerEmail,
+      senderEmail: user?.email || '',
     });
 
   const sendText = () => {
     if (!draft.trim()) return;
-    push({ from: role, type: "text", text: draft.trim() });
+    push({ from: effectiveRole, type: "text", text: draft.trim() });
     setDraft("");
     inputRef.current?.focus();
   };
@@ -82,14 +94,14 @@ function ContactModal({ book, onClose }) {
       toast("Enter a valid price", "error");
       return;
     }
-    push({ from: role, type: "offer", price, status: "pending" });
+    push({ from: effectiveRole, type: "offer", price, status: "pending" });
     setOfferPrice("");
     setOfferMode(false);
     toast(`₹${price} offer sent`);
     addNotification({
       kind: "offer",
-      title: role === "seller" ? `Price Offer: ₹${price}` : `Naya Buyer Offer: ₹${price}`,
-      body: `"${book.title}" — ${role === "seller" ? "seller made an offer — accept/decline" : "buyer made an offer"}`,
+      title: effectiveRole === "seller" ? `Price Offer: ₹${price}` : `Naya Buyer Offer: ₹${price}`,
+      body: `"${book.title}" — ${effectiveRole === "seller" ? "seller made an offer — accept/decline" : "buyer made an offer"}`,
     }).catch(() => {});
   };
 
@@ -212,7 +224,7 @@ function ContactModal({ book, onClose }) {
             </p>
           )}
           {messages.map((msg) => {
-            const mine = msg.from === role;
+            const mine = msg.from === effectiveRole;
             return (
               <div key={msg.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div
@@ -299,7 +311,7 @@ function ContactModal({ book, onClose }) {
 
         <div className="p-4 shrink-0">
           <div className="flex items-center justify-between mb-2">
-            {role === "seller" && (
+            {effectiveRole === "seller" && (
               <button
                 type="button"
                 onClick={() => setOfferMode((v) => !v)}

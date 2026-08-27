@@ -21,6 +21,7 @@ export const sendMessage = async (convId, msg, meta = {}) => {
     bookTitle: meta.bookTitle || '',
     seller: meta.seller || '',
     sellerEmail: meta.sellerEmail || '',
+    senderEmail: meta.senderEmail || '',
     ...msg,
   })
   dispatchUpdate()

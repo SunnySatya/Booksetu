@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import Message from '../models/Message.js'
+import Listing from '../models/Listing.js'
 import { authRequired, adminRequired } from '../middleware/auth.js'
 
 const router = Router()
@@ -19,7 +20,33 @@ router.get('/conversations', authRequired, async (_req, res) => {
         last: Message.mapOut(m),
       })
     }
-    res.json([...map.values()].sort((a, b) => b.last.at - a.last.at))
+
+    const conversations = [...map.values()].sort((a, b) => b.last.at - a.last.at)
+
+    // Backfill sellerEmail from Listing model for old conversations
+    const missing = conversations.filter((c) => !c.sellerEmail)
+    if (missing.length > 0) {
+      await Promise.all(
+        missing.map(async (conv) => {
+          try {
+            const listing = await Listing.findOne({
+              title: conv.title,
+              sellerName: conv.seller,
+            }).select('sellerEmail')
+            if (listing?.sellerEmail) {
+              conv.sellerEmail = listing.sellerEmail
+              // Also update existing messages in this conversation
+              await Message.updateMany(
+                { conversationId: conv.conversationId, sellerEmail: '' },
+                { $set: { sellerEmail: listing.sellerEmail } },
+              )
+            }
+          } catch {}
+        }),
+      )
+    }
+
+    res.json(conversations)
   } catch (e) {
     res.status(500).json({ message: e.message || 'Failed to load conversations' })
   }
@@ -38,7 +65,7 @@ router.get('/messages', authRequired, async (req, res) => {
 
 router.post('/messages', authRequired, async (req, res) => {
   try {
-    const { conversationId, bookTitle, seller, sellerEmail, from, type, text, price } = req.body || {}
+    const { conversationId, bookTitle, seller, sellerEmail, senderEmail, from, type, text, price } = req.body || {}
     if (!conversationId || !from)
       return res.status(400).json({ message: 'conversationId/from required' })
     if (type === 'offer' && !(Number(price) > 0))
@@ -48,6 +75,7 @@ router.post('/messages', authRequired, async (req, res) => {
       bookTitle: bookTitle || '',
       seller: seller || '',
       sellerEmail: sellerEmail || '',
+      senderEmail: senderEmail || req.user?.email || '',
       from,
       type: type === 'offer' ? 'offer' : 'text',
       text: text || '',

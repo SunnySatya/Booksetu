@@ -16,7 +16,7 @@ const readLocal = (key) => {
   }
 }
 
-const sameBook = (a, b) => a.title === b.title && a.seller === b.seller
+const sameBook = (a, b) => a.title === b.title && a.seller === b.seller && (a.sellerEmail || '') === (b.sellerEmail || '')
 
 export function ShopProvider({ children }) {
   const toast = useToast()
