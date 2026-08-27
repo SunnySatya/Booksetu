@@ -1,22 +1,4 @@
-import { Resend } from 'resend'
-
-let resend = null
-
-const RESEND_FROM = 'BookSetu <onboarding@resend.dev>'
-
-function getClient() {
-  if (resend) return resend
-
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
-    console.error('[email] RESEND_API_KEY is missing!')
-    return null
-  }
-
-  console.log('[email] Resend client initialized')
-  resend = new Resend(apiKey)
-  return resend
-}
+const BREVO_API = 'https://api.brevo.com/v3/smtp/email'
 
 function otpEmailHtml(code, purpose) {
   const label = purpose === 'password-reset' ? 'Password Reset' : 'Email Verification'
@@ -44,29 +26,41 @@ function otpEmailHtml(code, purpose) {
 }
 
 export async function sendOtpEmail(email, code, purpose) {
-  const client = getClient()
+  const apiKey = process.env.BREVO_API_KEY
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'sunnysatya4@gmail.com'
+  const senderName = process.env.BREVO_SENDER_NAME || 'BookSetu'
+
+  if (!apiKey) {
+    throw new Error('Email service not configured. Please contact support.')
+  }
 
   const label = purpose === 'password-reset' ? 'Password Reset' : 'Email Verification'
   const subject = `BookSetu — Your ${label} Code`
 
-  if (!client) {
-    throw new Error('Email service not configured. Please contact support.')
-  }
+  console.log(`[email] Sending OTP to ${email} via Brevo...`)
 
-  console.log(`[email] Sending OTP to ${email} via Resend...`)
-
-  const { data, error } = await client.emails.send({
-    from: RESEND_FROM,
-    to: email,
-    subject,
-    html: otpEmailHtml(code, purpose),
+  const res = await fetch(BREVO_API, {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { email: senderEmail, name: senderName },
+      to: [{ email }],
+      subject,
+      htmlContent: otpEmailHtml(code, purpose),
+    }),
   })
 
-  if (error) {
-    console.error('[email] Resend error:', JSON.stringify(error))
-    throw new Error(error.message || 'Failed to send email')
+  const data = await res.json()
+
+  if (!res.ok) {
+    console.error('[email] Brevo error:', res.status, JSON.stringify(data))
+    throw new Error(data.message || 'Failed to send email')
   }
 
-  console.log(`[email] OTP sent successfully to ${email}, id: ${data?.id}`)
+  console.log(`[email] OTP sent to ${email}, id: ${data.messageId}`)
   return { sent: true }
 }

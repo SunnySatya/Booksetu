@@ -12,7 +12,7 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: RESEND_API_KEY
+      - key: BREVO_API_KEY
         sync: false
-      - key: SMTP_FROM
-        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: sunnysatya4@gmail.com
