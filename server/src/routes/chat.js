@@ -9,11 +9,13 @@ router.get('/conversations', authRequired, async (_req, res) => {
     const msgs = await Message.find().sort({ at: 1 }).limit(2000)
     const map = new Map()
     for (const m of msgs) {
+      const existing = map.get(m.conversationId)
       map.set(m.conversationId, {
         conversationId: m.conversationId,
         title: m.bookTitle,
         seller: m.seller,
-        count: (map.get(m.conversationId)?.count || 0) + 1,
+        sellerEmail: m.sellerEmail || existing?.sellerEmail || '',
+        count: (existing?.count || 0) + 1,
         last: Message.mapOut(m),
       })
     }
@@ -36,7 +38,7 @@ router.get('/messages', authRequired, async (req, res) => {
 
 router.post('/messages', authRequired, async (req, res) => {
   try {
-    const { conversationId, bookTitle, seller, from, type, text, price } = req.body || {}
+    const { conversationId, bookTitle, seller, sellerEmail, from, type, text, price } = req.body || {}
     if (!conversationId || !from)
       return res.status(400).json({ message: 'conversationId/from required' })
     if (type === 'offer' && !(Number(price) > 0))
@@ -45,6 +47,7 @@ router.post('/messages', authRequired, async (req, res) => {
       conversationId,
       bookTitle: bookTitle || '',
       seller: seller || '',
+      sellerEmail: sellerEmail || '',
       from,
       type: type === 'offer' ? 'offer' : 'text',
       text: text || '',

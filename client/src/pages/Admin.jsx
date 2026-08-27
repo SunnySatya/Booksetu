@@ -566,7 +566,7 @@ const Admin = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setChatBook({ title: c.title, seller: c.seller })}
+                  onClick={() => setChatBook({ title: c.title, seller: c.seller, sellerEmail: c.sellerEmail })}
                   className="shrink-0 text-[11px] font-semibold text-emerald-600 hover:underline mr-1"
                 >
                   View

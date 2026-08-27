@@ -172,6 +172,7 @@ const Home = () => {
         : undefined,
     condition: l.condition,
     seller: l.sellerName || l.sellerEmail || "BookSetu Seller",
+    sellerEmail: l.sellerEmail || "",
     distance: l.distance != null ? `${l.distance.toFixed(1)} km` : null,
     address: l.location,
     category: l.category,

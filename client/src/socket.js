@@ -5,10 +5,15 @@ let socket = null
 
 export function initSocket() {
   if (socket) return socket
-  const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(
-    /\/api\/?$/,
-    '',
-  )
+
+  const isProd = import.meta.env.PROD
+  let base
+  if (isProd) {
+    base = window.location.origin
+  } else {
+    base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')
+  }
+
   socket = io(base, { auth: { token: getToken() } })
 
   socket.on('chat:update', () =>

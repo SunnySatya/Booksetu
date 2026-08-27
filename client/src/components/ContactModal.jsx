@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { X, Send, MapPin, MessageCircle, Phone, Tag, Check, Trash2 } from "lucide-react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { X, Send, MapPin, MessageCircle, Phone, Tag, Check, Trash2, Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "./Toast";
 import useChat from "../hooks/useChat";
@@ -10,13 +10,16 @@ function ContactModal({ book, onClose }) {
   const { user } = useAuth();
   const toast = useToast();
   const convId = makeConvId(book);
-  const messages = useChat(convId);
 
+  const sellerEmail = book.sellerEmail || "";
   const autoRole =
-    user?.email && book.sellerEmail && user.email === book.sellerEmail
+    user?.email && sellerEmail && user.email === sellerEmail
       ? "seller"
       : "buyer";
-  const [role, setRole] = useState(autoRole);
+  const [role] = useState(autoRole);
+
+  const messages = useChat(convId);
+  const prevCountRef = useRef(0);
 
   const [draft, setDraft] = useState("");
   const [offerMode, setOfferMode] = useState(false);
@@ -33,11 +36,38 @@ function ContactModal({ book, onClose }) {
     }
   }, [messages]);
 
-  const sellerPhone = book?.contact?.phone || "+91 98765 43210";
-  const waNumber = book?.contact?.whatsapp || (book?.contact?.phone ? book.contact.phone : null);
+  useEffect(() => {
+    if (messages.length > prevCountRef.current && prevCountRef.current > 0) {
+      const newMsg = messages[messages.length - 1];
+      if (newMsg && newMsg.from !== role) {
+        if (document.hidden || !document.hasFocus()) {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("BookSetu — New Message", {
+              body: newMsg.type === "offer" ? `Price offer: ₹${newMsg.price}` : newMsg.text,
+              icon: "/favicon.ico",
+            });
+          }
+        }
+      }
+    }
+    prevCountRef.current = messages.length;
+  }, [messages, role]);
+
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const sellerPhone = book?.contact?.phone || "";
+  const waNumber = book?.contact?.whatsapp || book?.contact?.phone || null;
 
   const push = (msg) =>
-    sendMessage(convId, msg, { bookTitle: book.title, seller: book.seller });
+    sendMessage(convId, msg, {
+      bookTitle: book.title,
+      seller: book.seller,
+      sellerEmail: sellerEmail,
+    });
 
   const sendText = () => {
     if (!draft.trim()) return;
@@ -56,19 +86,11 @@ function ContactModal({ book, onClose }) {
     setOfferPrice("");
     setOfferMode(false);
     toast(`₹${price} offer sent`);
-    if (role === "seller") {
-      addNotification({
-        kind: "offer",
-        title: `Price Offer: ₹${price}`,
-        body: `"${book.title}" — seller made an offer — accept/decline`,
-      }).catch(() => {});
-    } else {
-      addNotification({
-        kind: "offer",
-        title: `Naya Buyer Offer: ₹${price}`,
-        body: `"${book.title}" — buyer made an offer`,
-      }).catch(() => {});
-    }
+    addNotification({
+      kind: "offer",
+      title: role === "seller" ? `Price Offer: ₹${price}` : `Naya Buyer Offer: ₹${price}`,
+      body: `"${book.title}" — ${role === "seller" ? "seller made an offer — accept/decline" : "buyer made an offer"}`,
+    }).catch(() => {});
   };
 
   const respondOffer = (msg, status) => {
@@ -119,33 +141,37 @@ function ContactModal({ book, onClose }) {
             <h3 className="font-bold text-gray-900 truncate">{book.title}</h3>
             <p className="text-xs text-gray-500 truncate">
               Seller: {book.seller}
-              {book.price ? ` • Asking ${book.price}` : ""}
+              {book.price ? ` • Asking ₹${book.price}` : ""}
             </p>
           </div>
-          <button
-            onClick={handleDeleteChat}
-            disabled={deleting}
-            aria-label="Delete chat"
-            className="shrink-0 w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 ml-1 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={handleDeleteChat}
+              disabled={deleting}
+              aria-label="Delete chat"
+              className="w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="px-4 sm:px-6 py-3 flex flex-wrap items-center gap-2 border-b border-gray-50 shrink-0">
-          <a
-            href={`tel:${sellerPhone.replace(/\s/g, "")}`}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors"
-          >
-            <Phone className="w-3.5 h-3.5" /> Call
-          </a>
+          {sellerPhone && (
+            <a
+              href={`tel:${sellerPhone.replace(/\s/g, "")}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5" /> Call
+            </a>
+          )}
           {waNumber && (
             <a
               href={`https://wa.me/91${waNumber}?text=${encodeURIComponent(`Hi! I'm interested in "${book.title}" listed on BookSetu.`)}`}
@@ -273,11 +299,6 @@ function ContactModal({ book, onClose }) {
 
         <div className="p-4 shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full ${
-              role === "seller" ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
-            }`}>
-              {role} view
-            </span>
             {role === "seller" && (
               <button
                 type="button"

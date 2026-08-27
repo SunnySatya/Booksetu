@@ -20,6 +20,7 @@ export const sendMessage = async (convId, msg, meta = {}) => {
     conversationId: convId,
     bookTitle: meta.bookTitle || '',
     seller: meta.seller || '',
+    sellerEmail: meta.sellerEmail || '',
     ...msg,
   })
   dispatchUpdate()

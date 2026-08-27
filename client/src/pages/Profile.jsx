@@ -197,7 +197,7 @@ const Profile = () => {
                     <div key={c.key} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-emerald-50 rounded-xl transition-colors">
                       <button
                         type="button"
-                        onClick={() => setChatBook({ title: c.title, seller: c.seller })}
+                        onClick={() => setChatBook({ title: c.title, seller: c.seller, sellerEmail: c.sellerEmail })}
                         className="flex items-center gap-3 flex-1 min-w-0 text-left"
                       >
                         <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
