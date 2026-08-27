@@ -14,6 +14,8 @@ const mapContent = (d) => ({
   heroImages: Array.isArray(d?.heroImages) && d.heroImages.length ? d.heroImages : null,
   categoryImages: d?.categoryImages && typeof d.categoryImages === 'object' ? d.categoryImages : {},
   quotes: Array.isArray(d?.quotes) && d.quotes.length ? d.quotes : null,
+  trendingBooks: Array.isArray(d?.trendingBooks) && d.trendingBooks.length ? d.trendingBooks : null,
+  mustReadBooks: Array.isArray(d?.mustReadBooks) && d.mustReadBooks.length ? d.mustReadBooks : null,
 })
 
 export const getCustomHeroImages = async () => {
@@ -50,5 +52,25 @@ export const getCustomQuotes = async () => {
 
 export const saveQuotes = async (arr) => {
   await api.put('/content', { quotes: arr || [] })
+  dispatchUpdate()
+}
+
+export const getTrendingBooks = async () => {
+  const data = mapContent(await api.get('/content'))
+  return data.trendingBooks
+}
+
+export const saveTrendingBooks = async (arr) => {
+  await api.put('/content', { trendingBooks: arr || [] })
+  dispatchUpdate()
+}
+
+export const getMustReadBooks = async () => {
+  const data = mapContent(await api.get('/content'))
+  return data.mustReadBooks
+}
+
+export const saveMustReadBooks = async (arr) => {
+  await api.put('/content', { mustReadBooks: arr || [] })
   dispatchUpdate()
 }

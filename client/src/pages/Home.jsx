@@ -29,8 +29,8 @@ import {
   categories,
   featuredBooks,
   heroSlides,
-  trendingBooks,
-  mustReadBooks,
+  trendingBooks as defaultTrending,
+  mustReadBooks as defaultMustRead,
   TRENDING_CATEGORY_MAP,
   EXTRA_CATEGORY_BOOKS,
 } from "../data/homeData";
@@ -39,6 +39,10 @@ import CategorySlider from "../components/CategorySlider";
 import BookCard from "../components/BookCard";
 import useGeolocation from "../hooks/useGeolocation";
 import { getAllListings } from "../utils/listingStore";
+import {
+  getTrendingBooks,
+  getMustReadBooks,
+} from "../utils/contentStore";
 
 const heroImages = DEFAULT_HERO_IMAGES;
 
@@ -49,13 +53,16 @@ const Home = () => {
   const [slideIndex, setSlideIndex] = useState(0);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [heroImgIdx, setHeroImgIdx] = useState(0);
-  const [heroImgSrcs, setHeroImgSrcs] = useState(DEFAULT_HERO_IMAGES);
+  const [heroImgSrcs, setHeroImgSrcs] = useState(null);
+  const [heroLoaded, setHeroLoaded] = useState(false);
   const [quotesList, setQuotesList] = useState(quotes);
   const [serverListings, setServerListings] = useState([]);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [catImgMap, setCatImgMap] = useState({});
+  const [trendingBooks, setTrendingBooks] = useState(defaultTrending);
+  const [mustReadBooks, setMustReadBooks] = useState(defaultMustRead);
   const {
     status: locStatus,
     value: userLocation,
@@ -79,11 +86,13 @@ const Home = () => {
   }, [quotesList.length]);
 
   useEffect(() => {
+    const srcs = heroImgSrcs || DEFAULT_HERO_IMAGES;
+    if (!srcs.length) return undefined;
     const id = setInterval(() => {
-      setHeroImgIdx((i) => (i + 1) % heroImgSrcs.length);
+      setHeroImgIdx((i) => (i + 1) % srcs.length);
     }, 3000);
     return () => clearInterval(id);
-  }, [heroImgSrcs.length]);
+  }, [heroImgSrcs?.length]);
 
   useEffect(() => {
     let alive = true;
@@ -108,6 +117,15 @@ const Home = () => {
     getCategoryImages()
       .then((ci) => alive && ci && setCatImgMap(ci))
       .catch(() => {});
+    getTrendingBooks()
+      .then((t) => alive && t && setTrendingBooks(t))
+      .catch(() => {});
+    getMustReadBooks()
+      .then((m) => alive && m && setMustReadBooks(m))
+      .catch(() => {});
+    Promise.all([getCustomHeroImages()])
+      .then(() => alive && setHeroLoaded(true))
+      .catch(() => alive && setHeroLoaded(true));
     return () => {
       alive = false;
     };
@@ -116,18 +134,24 @@ const Home = () => {
   useEffect(() => {
     const refresh = async () => {
       try {
-        const [imgs, qs, ci] = await Promise.all([
+        const [imgs, qs, ci, trending, mustRead] = await Promise.all([
           getCustomHeroImages(),
           getCustomQuotes(),
           getCategoryImages(),
+          getTrendingBooks(),
+          getMustReadBooks(),
         ]);
         setHeroImgSrcs(imgs || DEFAULT_HERO_IMAGES);
         setQuotesList(qs || quotes);
         setCatImgMap(ci || {});
+        setTrendingBooks(trending || defaultTrending);
+        setMustReadBooks(mustRead || defaultMustRead);
         setHeroImgIdx(0);
         setQuoteIndex(0);
+        setHeroLoaded(true);
       } catch {}
     };
+    refresh();
     window.addEventListener(CONTENT_EVENT, refresh);
     return () => window.removeEventListener(CONTENT_EVENT, refresh);
   }, []);
@@ -256,6 +280,8 @@ const Home = () => {
     return cat;
   });
 
+  const effectiveHero = heroImgSrcs || DEFAULT_HERO_IMAGES;
+
   return (
     <div>
       <section className="relative bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white overflow-hidden">
@@ -309,31 +335,39 @@ const Home = () => {
           </div>
           <div className="hidden md:block relative">
             <div className="relative w-full max-w-xl ml-auto rounded-3xl overflow-hidden shadow-2xl aspect-[4/3]">
-              {heroImgSrcs.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt={`Featured books ${i + 1}`}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-                    i === heroImgIdx ? "opacity-100" : "opacity-0"
-                  }`}
-                />
-              ))}
-              <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
-                {heroImgSrcs.map((_, i) => (
-                  <button
+              {!heroLoaded ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-emerald-800/40">
+                  <BookOpen className="w-12 h-12 text-emerald-200/60 animate-pulse" />
+                </div>
+              ) : (
+                effectiveHero.map((src, i) => (
+                  <img
                     key={i}
-                    type="button"
-                    aria-label={`Show slide ${i + 1}`}
-                    onClick={() => setHeroImgIdx(i)}
-                    className={`rounded-full transition-all duration-300 ${
-                      i === heroImgIdx
-                        ? "w-5 h-2 bg-white"
-                        : "w-2 h-2 bg-white/50 hover:bg-white/80"
+                    src={src}
+                    alt={`Featured books ${i + 1}`}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                      i === heroImgIdx ? "opacity-100" : "opacity-0"
                     }`}
                   />
-                ))}
-              </div>
+                ))
+              )}
+              {heroLoaded && (
+                <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+                  {effectiveHero.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={`Show slide ${i + 1}`}
+                      onClick={() => setHeroImgIdx(i)}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === heroImgIdx
+                          ? "w-5 h-2 bg-white"
+                          : "w-2 h-2 bg-white/50 hover:bg-white/80"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
             <div className="absolute -top-6 -left-6 w-28 h-28 bg-yellow-300/40 rounded-full blur-2xl"></div>
             <div className="absolute -bottom-8 -right-4 w-32 h-32 bg-emerald-300/40 rounded-full blur-3xl"></div>

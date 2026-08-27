@@ -5,6 +5,9 @@ import {
   MessageCircle, Bell, LayoutGrid, Pencil, ShieldCheck, AlertTriangle, X,
   Image as ImageIcon, Plus, RotateCcw, Eye, EyeOff,
 } from 'lucide-react'
+import {
+  Flame, BookMarked, Star,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import ContactModal from '../components/ContactModal'
@@ -17,8 +20,12 @@ import {
   saveCategoryImages,
   getCustomQuotes,
   saveQuotes,
+  getTrendingBooks,
+  saveTrendingBooks,
+  getMustReadBooks,
+  saveMustReadBooks,
 } from '../utils/contentStore'
-import { quotes as defaultQuotes, categories as allCategories } from '../data/homeData'
+import { quotes as defaultQuotes, trendingBooks as defaultTrending, mustReadBooks as defaultMustRead, categories as allCategories } from '../data/homeData'
 import {
   getAllListings,
   updateListing,
@@ -123,6 +130,8 @@ const Admin = () => {
   const [newQuote, setNewQuote] = useState({ text: '', author: '' })
   const [photoBusy, setPhotoBusy] = useState(false)
   const [catPhotoBusy, setCatPhotoBusy] = useState(false)
+  const [trendingList, setTrendingList] = useState([...defaultTrending])
+  const [mustReadList, setMustReadList] = useState([...defaultMustRead])
 
   const refresh = () => setVersion((v) => v + 1)
 
@@ -136,7 +145,7 @@ const Admin = () => {
     let alive = true
     ;(async () => {
       try {
-        const [ls, us, cs, ns, hero, catImages, quotesStored] = await Promise.all([
+        const [ls, us, cs, ns, hero, catImages, quotesStored, trendingStored, mustReadStored] = await Promise.all([
           getAllListings(),
           getUsers(),
           getAllConversations(),
@@ -144,6 +153,8 @@ const Admin = () => {
           getCustomHeroImages(),
           getCategoryImages(),
           getCustomQuotes(),
+          getTrendingBooks(),
+          getMustReadBooks(),
         ])
         if (!alive) return
         setListings(ls)
@@ -153,6 +164,8 @@ const Admin = () => {
         setHeroImgs(hero)
         setCatImgs(catImages || {})
         setQuoteList(quotesStored || [...defaultQuotes])
+        setTrendingList(trendingStored || [...defaultTrending])
+        setMustReadList(mustReadStored || [...defaultMustRead])
       } catch {}
     })()
     return () => {
@@ -858,6 +871,88 @@ const Admin = () => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-orange-500" />
+                  <h3 className="text-lg font-bold text-gray-900">Trending Books</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setTrendingList([...defaultTrending]); saveTrendingBooks(defaultTrending); refresh(); toast('Default trending books restored', 'info') }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:underline"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Reset to Default
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">Books shown in the Trending section on home page. Max 10.</p>
+              <div className="space-y-2">
+                {trendingList.map((b, i) => (
+                  <div key={i} className="flex items-start gap-2 bg-gray-50 rounded-xl p-3">
+                    <span className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-xs font-bold text-orange-600 shrink-0 mt-1">{i + 1}</span>
+                    <div className="min-w-0 flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <input type="text" value={b.title} onChange={(e) => { const l = [...trendingList]; l[i] = { ...l[i], title: e.target.value }; setTrendingList(l) }} onBlur={() => saveTrendingBooks(trendingList)} placeholder="Title *" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                      <input type="text" value={b.price} onChange={(e) => { const l = [...trendingList]; l[i] = { ...l[i], price: e.target.value }; setTrendingList(l) }} onBlur={() => saveTrendingBooks(trendingList)} placeholder="₹ Price" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                      <input type="text" value={b.views} onChange={(e) => { const l = [...trendingList]; l[i] = { ...l[i], views: e.target.value }; setTrendingList(l) }} onBlur={() => saveTrendingBooks(trendingList)} placeholder="Views" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                      <input type="text" value={b.tag} onChange={(e) => { const l = [...trendingList]; l[i] = { ...l[i], tag: e.target.value }; setTrendingList(l) }} onBlur={() => saveTrendingBooks(trendingList)} placeholder="Tag" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                    </div>
+                    <button type="button" aria-label={`Delete trending ${i + 1}`} onClick={() => { const l = trendingList.filter((_, j) => j !== i).map((b, j) => ({ ...b, rank: j + 1 })); setTrendingList(l); saveTrendingBooks(l); toast('Removed', 'info') }} className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors shrink-0 mt-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {trendingList.length < 10 && (
+                <button type="button" onClick={() => { const l = [...trendingList, { rank: trendingList.length + 1, title: '', price: '', views: '', tag: '' }]; setTrendingList(l) }} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors">
+                  <Plus className="w-4 h-4" /> Add Trending Book
+                </button>
+              )}
+              <button type="button" onClick={() => { saveTrendingBooks(trendingList); refresh(); toast('Trending books saved') }} className="mt-3 ml-2 inline-flex items-center gap-1.5 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors">
+                Save
+              </button>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <BookMarked className="w-5 h-5 text-purple-500" />
+                  <h3 className="text-lg font-bold text-gray-900">Must Read Books</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setMustReadList([...defaultMustRead]); saveMustReadBooks(defaultMustRead); refresh(); toast('Default must-read books restored', 'info') }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:underline"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Reset to Default
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">Books shown in the Must Read section on home page. Max 10.</p>
+              <div className="space-y-2">
+                {mustReadList.map((b, i) => (
+                  <div key={i} className="flex items-start gap-2 bg-gray-50 rounded-xl p-3">
+                    <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-5 gap-2">
+                      <input type="text" value={b.title} onChange={(e) => { const l = [...mustReadList]; l[i] = { ...l[i], title: e.target.value }; setMustReadList(l) }} onBlur={() => saveMustReadBooks(mustReadList)} placeholder="Title *" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                      <input type="text" value={b.author} onChange={(e) => { const l = [...mustReadList]; l[i] = { ...l[i], author: e.target.value }; setMustReadList(l) }} onBlur={() => saveMustReadBooks(mustReadList)} placeholder="Author" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                      <input type="text" value={b.note} onChange={(e) => { const l = [...mustReadList]; l[i] = { ...l[i], note: e.target.value }; setMustReadList(l) }} onBlur={() => saveMustReadBooks(mustReadList)} placeholder="Note" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                      <input type="text" value={b.rating} onChange={(e) => { const l = [...mustReadList]; l[i] = { ...l[i], rating: e.target.value }; setMustReadList(l) }} onBlur={() => saveMustReadBooks(mustReadList)} placeholder="Rating" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                      <input type="text" value={b.price} onChange={(e) => { const l = [...mustReadList]; l[i] = { ...l[i], price: e.target.value }; setMustReadList(l) }} onBlur={() => saveMustReadBooks(mustReadList)} placeholder="₹ Price" className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-sm" />
+                    </div>
+                    <button type="button" aria-label={`Delete must-read ${i + 1}`} onClick={() => { const l = mustReadList.filter((_, j) => j !== i); setMustReadList(l); saveMustReadBooks(l); toast('Removed', 'info') }} className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors shrink-0 mt-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {mustReadList.length < 10 && (
+                <button type="button" onClick={() => { const l = [...mustReadList, { title: '', author: '', note: '', rating: '', price: '' }]; setMustReadList(l) }} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors">
+                  <Plus className="w-4 h-4" /> Add Must Read Book
+                </button>
+              )}
+              <button type="button" onClick={() => { saveMustReadBooks(mustReadList); refresh(); toast('Must-read books saved') }} className="mt-3 ml-2 inline-flex items-center gap-1.5 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors">
+                Save
+              </button>
             </div>
           </div>
         )}

@@ -11,6 +11,26 @@ const appContentSchema = new mongoose.Schema({
       author: { type: String, default: '' },
     },
   ],
+  trendingBooks: [
+    {
+      _id: false,
+      title: { type: String, default: '' },
+      price: { type: String, default: '' },
+      views: { type: String, default: '' },
+      tag: { type: String, default: '' },
+      rank: { type: Number, default: 0 },
+    },
+  ],
+  mustReadBooks: [
+    {
+      _id: false,
+      title: { type: String, default: '' },
+      author: { type: String, default: '' },
+      note: { type: String, default: '' },
+      rating: { type: String, default: '' },
+      price: { type: String, default: '' },
+    },
+  ],
 })
 
 appContentSchema.statics.getMain = async function () {
