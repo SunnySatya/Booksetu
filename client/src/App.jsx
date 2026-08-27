@@ -1,23 +1,32 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
-import Home from './pages/Home'
-import Login from './pages/Auth/Login'
-import Signup from './pages/Auth/Signup'
-import ForgotPassword from './pages/Auth/ForgotPassword'
-import Dashboard from './pages/Dashboard'
-import Listing from './pages/Listing'
-import Profile from './pages/Profile'
-import Cart from './pages/Cart'
-import Wishlist from './pages/Wishlist'
+
+// Code-split each page so only the visited route's JS is fetched (faster first paint).
+const Home = lazy(() => import('./pages/Home'))
+const Login = lazy(() => import('./pages/Auth/Login'))
+const Signup = lazy(() => import('./pages/Auth/Signup'))
+const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Listing = lazy(() => import('./pages/Listing'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Cart = lazy(() => import('./pages/Cart'))
+const Wishlist = lazy(() => import('./pages/Wishlist'))
+const Admin = lazy(() => import('./pages/Admin'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './components/Toast'
 import { ShopProvider, useShop } from './context/ShopContext'
 import ProtectedRoute from './components/ProtectedRoute'
-import NotFound from './pages/NotFound'
 import NotificationBell from './components/NotificationBell'
-import Admin from './pages/Admin'
+import SeoManager from './components/SeoManager'
 import { initSocket } from './socket'
 import { BookOpen, Menu, X, Heart, ShoppingCart } from 'lucide-react'
+
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+  </div>
+)
 
 function Navbar() {
   const { isLoggedIn, user } = useAuth()
@@ -125,21 +134,24 @@ export default function App() {
         <ShopProvider>
           <Router>
           <div className="min-h-screen bg-gray-50 text-gray-900">
+            <SeoManager />
             <Navbar />
             <main>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/listing" element={<ProtectedRoute><Listing /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/listing" element={<ProtectedRoute><Listing /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </main>
           </div>
         </Router>

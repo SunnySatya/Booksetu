@@ -30,6 +30,8 @@ import {
   getAllListings,
   updateListing,
   deleteListing,
+  featureListing,
+  unfeatureListing,
 } from '../utils/listingStore'
 import { getUsers, deleteUserByEmailOrId, setAdminByUser } from '../utils/userStore'
 import {
@@ -429,7 +431,14 @@ const Admin = () => {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{l.title}</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {l.title}
+                    {l.featured && (
+                      <span className="inline-flex items-center gap-0.5 ml-1 align-middle text-[10px] font-bold uppercase bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded-full">
+                        <Star className="w-2.5 h-2.5 fill-yellow-500 text-yellow-500" /> Featured
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-gray-500 truncate">
                     {l.sellerName || l.sellerEmail || 'Unknown'} • {l.category || '—'} • {l.listingType}
                     {l.condition ? ` • ${l.condition}` : ''}
@@ -437,6 +446,43 @@ const Admin = () => {
                 </div>
                 <span className="font-extrabold text-emerald-600 text-sm shrink-0">{l.listingType === 'exchange' ? 'Free' : `₹${l.price ?? 0}`}</span>
                 <div className="flex items-center gap-1 shrink-0">
+                  {l.featured ? (
+                    <button
+                      type="button"
+                      aria-label="Unfeature listing"
+                      title="Remove featured"
+                      onClick={async () => {
+                        try {
+                          await unfeatureListing(l.id)
+                          refresh()
+                          toast('Featured removed', 'info')
+                        } catch (e) {
+                          toast(e.message || 'Action failed', 'error')
+                        }
+                      }}
+                      className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-yellow-500 hover:text-red-500 transition-colors"
+                    >
+                      <Star className="w-4 h-4 fill-yellow-500" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label="Feature listing"
+                      title="Feature for 7 days"
+                      onClick={async () => {
+                        try {
+                          await featureListing(l.id, 7)
+                          refresh()
+                          toast('Book featured for 7 days', 'info')
+                        } catch (e) {
+                          toast(e.message || 'Action failed', 'error')
+                        }
+                      }}
+                      className="w-8 h-8 rounded-lg hover:bg-yellow-50 flex items-center justify-center text-gray-300 hover:text-yellow-500 transition-colors"
+                    >
+                      <Star className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     aria-label="Edit listing"

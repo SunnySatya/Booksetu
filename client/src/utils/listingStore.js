@@ -33,3 +33,15 @@ export const updateListing = async (id, patch) => {
 export const deleteListing = async (id) => {
   await api.del(`/listings/${id}`)
 }
+
+// Admin: promote a listing to "featured" for N days (ranks it first on the market).
+export const featureListing = async (id, days) => {
+  const updated = await api.patch(`/listings/${id}/featured`, { days })
+  return map(updated)
+}
+
+// Admin: demote a listing (remove featured status).
+export const unfeatureListing = async (id) => {
+  const updated = await api.del(`/listings/${id}/featured`)
+  return map(updated)
+}

@@ -1,5 +1,5 @@
 import React from "react";
-import { BookOpen, MapPin, Heart, ShoppingCart, Check, Camera } from "lucide-react";
+import { BookOpen, MapPin, Heart, ShoppingCart, Check, Camera, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 
@@ -46,6 +46,11 @@ const BookCard = ({ book, onClick, onContact }) => {
       }`}
     >
       <div className="relative">
+        {book.featured && (
+          <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 text-[11px] font-bold uppercase bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full shadow-sm">
+            <Star className="w-3 h-3 fill-yellow-900" /> Featured
+          </span>
+        )}
         {book.images && book.images.length > 0 ? (
           <>
             <img

@@ -203,6 +203,7 @@ const Home = () => {
     contact: l.contact,
     listingType: l.listingType || "single",
     images: l.images || [],
+    featured: !!l.featured,
     rentFeePercent: l.rentFeePercent,
     rentDays: l.rentDays,
   }));
@@ -333,8 +334,8 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <div className="hidden md:block relative">
-            <div className="relative w-full max-w-xl ml-auto rounded-3xl overflow-hidden shadow-2xl aspect-[4/3]">
+          <div className="relative">
+            <div className="relative w-full max-w-xl mx-auto md:ml-auto rounded-3xl overflow-hidden shadow-2xl aspect-[4/3]">
               {!heroLoaded ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-emerald-800/40">
                   <BookOpen className="w-12 h-12 text-emerald-200/60 animate-pulse" />

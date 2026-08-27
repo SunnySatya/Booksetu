@@ -33,6 +33,54 @@ app.use(express.json({ limit: '12mb' }))
 app.use(rateLimit({ windowMs: 60000, max: 200, message: 'Too many requests' }))
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, name: 'BookSetu API' }))
+
+// SEO: robots.txt + sitemap.xml for search engines
+const SITE_URL = isProd
+  ? process.env.SITE_URL || process.env.RENDER_EXTERNAL_URL || 'https://booksetu.onrender.com'
+  : 'http://localhost:5173'
+
+const STATIC_ROUTES = [
+  '/',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/dashboard',
+  '/listing',
+  '/profile',
+  '/cart',
+  '/wishlist',
+]
+
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`)
+})
+
+app.get('/sitemap.xml', async (_req, res) => {
+  try {
+    // Static public pages
+    const entries = STATIC_ROUTES.map(
+      (route) =>
+        `  <url>\n    <loc>${SITE_URL}${route === '/' ? '/' : route}</loc>\n  </url>`,
+    ).join('\n')
+    // Dynamic listing detail pages (public book data)
+    let listingUrls = ''
+    try {
+      const Listing = (await import('./models/Listing.js')).default
+      const listings = await Listing.find({}, 'title location _id').sort({ createdAt: -1 }).limit(500).lean()
+      listingUrls = listings
+        .map(
+          (l) =>
+            `  <url>\n    <loc>${SITE_URL}/book/${String(l._id)}</loc>\n  </url>`,
+        )
+        .join('\n')
+    } catch {}
+    res
+      .type('application/xml')
+      .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}${listingUrls ? `\n${listingUrls}` : ''}\n</urlset>\n`)
+  } catch (e) {
+    res.status(500).type('text/plain').send('sitemap error')
+  }
+})
 app.use('/api/auth', authRoutes)
 app.use('/api/otp', otpRoutes)
 app.use('/api/users', userRoutes)

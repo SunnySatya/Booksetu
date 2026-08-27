@@ -70,16 +70,22 @@ router.get('/', async (req, res) => {
       return obj
     })
 
-    if (hasCoords) {
-      mapped.sort((a, b) => {
-        if (a.distance === null && b.distance === null) return 0
-        if (a.distance === null) return 1
-        if (b.distance === null) return -1
-        return a.distance - b.distance
-      })
-    }
+    // Featured (promoted) listings rank first; within groups sort by distance,
+    // then by newest. Featured ones with expired expiry are demoted automatically.
+    const now = Date.now()
+    const withRank = mapped.map((m) => ({
+      ...m,
+      _featuredBoost: m.featured && (!m.featuredUntil || new Date(m.featuredUntil).getTime() > now) ? 0 : 1,
+    }))
+    const sorted = withRank.sort((a, b) => {
+      if (a._featuredBoost !== b._featuredBoost) return a._featuredBoost - b._featuredBoost
+      if (a.distance === null && b.distance === null) return 0
+      if (a.distance === null) return 1
+      if (b.distance === null) return -1
+      return a.distance - b.distance
+    }).map(({ _featuredBoost, ...rest }) => rest)
 
-    res.json({ listings: mapped, total })
+    res.json({ listings: sorted, total })
   } catch (e) {
     res.status(500).json({ message: e.message || 'Failed to load listings' })
   }
@@ -153,6 +159,39 @@ router.delete('/:id', authRequired, async (req, res) => {
     res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ message: e.message || 'Failed to delete listing' })
+  }
+})
+
+// Admin: toggle featured (promoted) status on a listing.
+router.patch('/:id/featured', authRequired, async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id)
+    if (!listing) return res.status(404).json({ message: 'Listing not found' })
+    if (!req.user.isAdmin)
+      return res.status(403).json({ message: 'Admin access required' })
+    const days = Math.max(1, Math.min(Number(req.body?.days) || 7, 90))
+    listing.featured = true
+    listing.featuredUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+    await listing.save()
+    res.json(Listing.mapOut(listing))
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to feature listing' })
+  }
+})
+
+// Admin: remove featured status from a listing.
+router.delete('/:id/featured', authRequired, async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id)
+    if (!listing) return res.status(404).json({ message: 'Listing not found' })
+    if (!req.user.isAdmin)
+      return res.status(403).json({ message: 'Admin access required' })
+    listing.featured = false
+    listing.featuredUntil = null
+    await listing.save()
+    res.json(Listing.mapOut(listing))
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to unfeature listing' })
   }
 })
 

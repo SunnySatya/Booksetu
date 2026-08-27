@@ -30,6 +30,8 @@ const listingSchema = new mongoose.Schema(
     sellerName: { type: String, default: '' },
     sellerEmail: { type: String, default: '', index: true },
     images: { type: [String], default: [] },
+    featured: { type: Boolean, default: false, index: true },
+    featuredUntil: { type: Date, default: null },
   },
   { timestamps: true },
 )
@@ -38,7 +40,12 @@ listingSchema.index({ createdAt: -1 })
 listingSchema.index({ price: 1 })
 listingSchema.index({ lat: 1, lng: 1 })
 
-const map = (l) => ({ ...l.toObject(), id: String(l._id) })
+const map = (l) => {
+  const now = Date.now()
+  const featuredActive =
+    l.featured && (!l.featuredUntil || new Date(l.featuredUntil).getTime() > now)
+  return { ...l.toObject(), id: String(l._id), featured: !!featuredActive }
+}
 listingSchema.statics.mapOut = (l) => map(l)
 
 export default mongoose.model('Listing', listingSchema)
