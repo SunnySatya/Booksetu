@@ -2,15 +2,18 @@ import { Resend } from 'resend'
 
 let resend = null
 
+const RESEND_FROM = 'BookSetu <onboarding@resend.dev>'
+
 function getClient() {
   if (resend) return resend
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    console.warn('[email] RESEND_API_KEY not configured — cannot send email')
+    console.error('[email] RESEND_API_KEY is missing!')
     return null
   }
 
+  console.log('[email] Resend client initialized')
   resend = new Resend(apiKey)
   return resend
 }
@@ -50,12 +53,20 @@ export async function sendOtpEmail(email, code, purpose) {
     throw new Error('Email service not configured. Please contact support.')
   }
 
-  await client.emails.send({
-    from: process.env.SMTP_FROM || 'BookSetu <onboarding@resend.dev>',
+  console.log(`[email] Sending OTP to ${email} via Resend...`)
+
+  const { data, error } = await client.emails.send({
+    from: RESEND_FROM,
     to: email,
     subject,
     html: otpEmailHtml(code, purpose),
   })
 
+  if (error) {
+    console.error('[email] Resend error:', JSON.stringify(error))
+    throw new Error(error.message || 'Failed to send email')
+  }
+
+  console.log(`[email] OTP sent successfully to ${email}, id: ${data?.id}`)
   return { sent: true }
 }
