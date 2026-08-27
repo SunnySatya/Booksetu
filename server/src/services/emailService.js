@@ -1,31 +1,18 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
-let transporter = null
+let resend = null
 
-function getTransporter() {
-  if (transporter) return transporter
+function getClient() {
+  if (resend) return resend
 
-  const host = process.env.SMTP_HOST
-  const port = Number(process.env.SMTP_PORT) || 587
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-
-  if (!host || !user || !pass) {
-    console.warn('[email] SMTP not configured — emails will be logged to console only')
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.warn('[email] RESEND_API_KEY not configured — cannot send email')
     return null
   }
 
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  })
-
-  return transporter
+  resend = new Resend(apiKey)
+  return resend
 }
 
 function otpEmailHtml(code, purpose) {
@@ -54,18 +41,17 @@ function otpEmailHtml(code, purpose) {
 }
 
 export async function sendOtpEmail(email, code, purpose) {
-  const transport = getTransporter()
+  const client = getClient()
 
   const label = purpose === 'password-reset' ? 'Password Reset' : 'Email Verification'
   const subject = `BookSetu — Your ${label} Code`
 
-  if (!transport) {
-    console.warn('[email] SMTP not configured — cannot send email')
+  if (!client) {
     throw new Error('Email service not configured. Please contact support.')
   }
 
-  await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  await client.emails.send({
+    from: process.env.SMTP_FROM || 'BookSetu <onboarding@resend.dev>',
     to: email,
     subject,
     html: otpEmailHtml(code, purpose),
