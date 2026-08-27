@@ -23,7 +23,6 @@ const Signup = () => {
   const [locError, setLocError] = useState('')
   const [sendingOtp, setSendingOtp] = useState(false)
   const [verifyingOtp, setVerifyingOtp] = useState(false)
-  const [devCode, setDevCode] = useState('')
   const { register, requestLocation } = useAuth()
   const navigate = useNavigate()
   const routeState = useLocation().state
@@ -50,8 +49,7 @@ const Signup = () => {
     setSendingOtp(true)
     setOtpError('')
     try {
-      const res = await sendOtp(email, 'registration')
-      setDevCode(res.devMode ? res.code : '')
+      await sendOtp(email, 'registration')
       setOtp('')
       setResendTimer(30)
       setStep('otp')
@@ -85,8 +83,7 @@ const Signup = () => {
     setSendingOtp(true)
     setOtpError('')
     try {
-      const res = await sendOtp(email, 'registration')
-      setDevCode(res.devMode ? res.code : '')
+      await sendOtp(email, 'registration')
       setOtp('')
       setResendTimer(30)
     } catch (err) {
@@ -240,12 +237,6 @@ const Signup = () => {
           {step === 'otp' && (
             <div className="space-y-5">
               <OtpInput value={otp} onChange={setOtp} disabled={verifyingOtp} />
-
-              {devCode && (
-                <p className="text-xs text-center text-gray-400">
-                  Dev mode — your OTP is <span className="font-mono font-bold text-emerald-600">{devCode}</span>
-                </p>
-              )}
 
               {otpError && (
                 <p className="text-sm text-center text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">{otpError}</p>

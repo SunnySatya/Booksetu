@@ -21,7 +21,6 @@ const ForgotPassword = () => {
   const [sendingOtp, setSendingOtp] = useState(false)
   const [verifyingOtp, setVerifyingOtp] = useState(false)
   const [resetting, setResetting] = useState(false)
-  const [devCode, setDevCode] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -39,8 +38,7 @@ const ForgotPassword = () => {
     setSendingOtp(true)
     setOtpError('')
     try {
-      const res = await sendOtp(email, 'password-reset')
-      setDevCode(res.devMode ? res.code : '')
+      await sendOtp(email, 'password-reset')
       setOtp('')
       setResendTimer(30)
       setStep('otp')
@@ -56,8 +54,7 @@ const ForgotPassword = () => {
     setSendingOtp(true)
     setOtpError('')
     try {
-      const res = await sendOtp(email, 'password-reset')
-      setDevCode(res.devMode ? res.code : '')
+      await sendOtp(email, 'password-reset')
       setOtp('')
       setResendTimer(30)
     } catch (err) {
@@ -158,12 +155,6 @@ const ForgotPassword = () => {
           {!success && step === 'otp' && (
             <div className="space-y-5">
               <OtpInput value={otp} onChange={setOtp} disabled={verifyingOtp} />
-
-              {devCode && (
-                <p className="text-xs text-center text-gray-400">
-                  Dev mode — your OTP is <span className="font-mono font-bold text-emerald-600">{devCode}</span>
-                </p>
-              )}
 
               {otpError && (
                 <p className="text-sm text-center text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">{otpError}</p>

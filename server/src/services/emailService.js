@@ -60,21 +60,16 @@ export async function sendOtpEmail(email, code, purpose) {
   const subject = `BookSetu — Your ${label} Code`
 
   if (!transport) {
-    console.log(`[email][DEV] ${subject} → ${email}`)
-    console.log(`[email][DEV] Code: ${code}`)
-    return { dev: true }
+    console.warn('[email] SMTP not configured — cannot send email')
+    throw new Error('Email service not configured. Please contact support.')
   }
 
-  try {
-    await transport.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: email,
-      subject,
-      html: otpEmailHtml(code, purpose),
-    })
-    return { sent: true }
-  } catch (err) {
-    console.error('[email] Failed to send OTP email:', err.message)
-    return { dev: true }
-  }
+  await transport.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: email,
+    subject,
+    html: otpEmailHtml(code, purpose),
+  })
+
+  return { sent: true }
 }

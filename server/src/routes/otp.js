@@ -34,12 +34,9 @@ router.post('/send', sendLimiter, async (req, res) => {
     }
 
     const { code } = await createOtp(normalizedEmail, purpose)
-    const emailResult = await sendOtpEmail(normalizedEmail, code, purpose)
+    await sendOtpEmail(normalizedEmail, code, purpose)
 
-    res.json({
-      message: 'Code sent successfully',
-      ...(emailResult.dev && { devMode: true, code }),
-    })
+    res.json({ message: 'Code sent successfully' })
   } catch (err) {
     const status = err.status || 500
     res.status(status).json({ message: err.message || 'Failed to send code' })
