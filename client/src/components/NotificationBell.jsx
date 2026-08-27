@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Bell, Tag, Check, Megaphone, Info } from 'lucide-react'
+import { Bell, Tag, Check, Megaphone, Info, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import useNotifications from '../hooks/useNotifications'
 import { getLastRead, markAllRead } from '../utils/notificationStore'
@@ -74,47 +74,65 @@ function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-h-[70vh] overflow-y-auto bg-white rounded-2xl shadow-2xl ring-1 ring-black/10 z-[90] animate-toast-in">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-            <p className="font-bold text-sm text-gray-900">Notifications</p>
-            {items.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  markAllRead()
-                  setLastRead(getLastRead())
-                }}
-                className="text-xs font-semibold text-emerald-600 hover:underline"
-              >
-                Mark all read
-              </button>
-            )}
-          </div>
-
-          {items.length === 0 ? (
-            <div className="py-10 text-center px-4">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                <Bell className="w-5 h-5 text-gray-400" />
+        <>
+          <div
+            className="fixed inset-0 z-[88] bg-black/40 backdrop-blur-sm sm:hidden"
+            onClick={() => setOpen(false)}
+          />
+          <div className="fixed left-0 right-0 top-0 bottom-0 z-[89] flex flex-col bg-white sm:absolute sm:left-auto sm:top-full sm:mt-2 sm:w-80 sm:max-h-[70vh] sm:rounded-2xl sm:shadow-2xl sm:ring-1 sm:ring-black/10 sm:z-[90] sm:animate-toast-in">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+              <p className="font-bold text-sm text-gray-900">Notifications</p>
+              <div className="flex items-center gap-2">
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markAllRead()
+                      setLastRead(getLastRead())
+                    }}
+                    className="text-xs font-semibold text-emerald-600 hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close notifications"
+                  className="sm:hidden p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <p className="text-sm text-gray-400">No notifications yet</p>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {items.map((n) => (
-                <div key={n.id} className={`flex gap-3 px-4 py-3 ${n.at > lastRead ? 'bg-emerald-50/40' : ''}`}>
-                  <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${KIND_BG[n.kind] || KIND_BG.info}`}>
-                    {KIND_ICON[n.kind] || KIND_ICON.info}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 leading-snug">{n.title}</p>
-                    {n.body && <p className="text-xs text-gray-500 mt-0.5">{n.body}</p>}
-                    <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.at)}</p>
+
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {items.length === 0 ? (
+                <div className="py-10 text-center px-4">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                    <Bell className="w-5 h-5 text-gray-400" />
                   </div>
+                  <p className="text-sm text-gray-400">No notifications yet</p>
                 </div>
-              ))}
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {items.map((n) => (
+                    <div key={n.id} className={`flex gap-3 px-4 py-3 ${n.at > lastRead ? 'bg-emerald-50/40' : ''}`}>
+                      <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${KIND_BG[n.kind] || KIND_BG.info}`}>
+                        {KIND_ICON[n.kind] || KIND_ICON.info}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 leading-snug">{n.title}</p>
+                        {n.body && <p className="text-xs text-gray-500 mt-0.5">{n.body}</p>}
+                        <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   )

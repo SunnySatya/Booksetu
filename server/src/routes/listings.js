@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import Listing from '../models/Listing.js'
+import User from '../models/User.js'
+import Notification from '../models/Notification.js'
 import { authRequired } from '../middleware/auth.js'
 
 const router = Router()
@@ -14,6 +16,37 @@ function haversineKm(a, b) {
       Math.cos((b.lat * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(s))
+}
+
+const norm = (s = '') =>
+  String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .trim()
+
+async function notifyNearbyUsers(app, listing) {
+  try {
+    const area = norm(listing.location)
+    if (!area) return
+    const users = await User.find({ city: { $ne: '' } }).select('email city name').lean()
+    const matched = users.filter((u) => norm(u.city) === area)
+    if (matched.length === 0) return
+    const priceLabel =
+      listing.listingType === 'exchange'
+        ? 'Free'
+        : listing.listingType === 'rent'
+          ? `₹${listing.price ?? 0}/rent`
+          : `₹${listing.price ?? 0}`
+    await Notification.insertMany(
+      matched.map((u) => ({
+        title: 'New book in your area!',
+        body: `"${listing.title}" is now available in ${listing.location} for ${priceLabel}.`,
+        kind: 'info',
+        to: u.email,
+      })),
+    )
+    app?.get('io')?.emit('notification:new')
+  } catch {}
 }
 
 router.get('/', async (req, res) => {
@@ -75,6 +108,7 @@ router.post('/', authRequired, async (req, res) => {
       lat: body.lat != null ? Number(body.lat) : null,
       lng: body.lng != null ? Number(body.lng) : null,
     })
+    notifyNearbyUsers(req.app, listing)
     res.status(201).json(Listing.mapOut(listing))
   } catch (e) {
     res.status(400).json({ message: e.message || 'Failed to save listing' })
