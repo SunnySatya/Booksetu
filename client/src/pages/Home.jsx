@@ -372,11 +372,11 @@ const Home = () => {
             </div>
             <div className="absolute -top-6 -left-6 w-28 h-28 bg-yellow-300/40 rounded-full blur-2xl"></div>
             <div className="absolute -bottom-8 -right-4 w-32 h-32 bg-emerald-300/40 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-10 left-6 bg-white/95 backdrop-blur-sm px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 min-w-[240px]">
-              <BookOpen className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div className="absolute bottom-2 sm:bottom-10 left-2 sm:left-6 bg-white/95 backdrop-blur-sm px-3 py-2 sm:px-5 sm:py-3 rounded-2xl shadow-xl flex items-center gap-2 sm:gap-2.5 w-auto max-w-[85%] sm:max-w-none">
+              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0" />
               <span
                 key={slideIndex}
-                className="font-script text-3xl font-bold leading-none text-gradient-amber animate-slide-up"
+                className="font-script text-xl sm:text-3xl font-bold leading-none text-gradient-amber animate-slide-up truncate"
               >
                 {heroSlides[slideIndex]}
               </span>
