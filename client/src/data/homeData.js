@@ -88,6 +88,7 @@ export const heroSlides = [
   "Buy up to 70% Off",
   "Sell to Needy",
   "Don't Sell in Scrap",
+  "Exchange to Read",
 ];
 
 export const trendingBooks = [
