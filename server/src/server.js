@@ -128,6 +128,9 @@ io.use((socket, next) => {
 })
 io.on('connection', (socket) => {
   socket.join('site')
+  if (socket.data.user?.email) {
+    socket.join(`user:${String(socket.data.user.email).toLowerCase()}`)
+  }
 })
 
 app.set('io', io)

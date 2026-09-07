@@ -3,13 +3,42 @@ import { X, Send, MapPin, MessageCircle, Phone, Tag, Check, Trash2, Bell } from 
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "./Toast";
 import useChat from "../hooks/useChat";
-import { addNotification } from "../utils/notificationStore";
+import { getListingById } from "../utils/listingStore";
 import { makeConvId, sendMessage, setOfferStatus, deleteConversationByKey } from "../utils/chatStore";
 
 function ContactModal({ book, onClose }) {
   const { user } = useAuth();
   const toast = useToast();
-  const convId = makeConvId(book);
+  const [bookData, setBookData] = useState(book);
+
+  // Light feed listings only carry thumbnails — fetch the full photos lazily.
+  useEffect(() => {
+    let alive = true;
+    setBookData(book);
+    if (!book?.id) return undefined;
+    const haveImages = book.images?.length ?? 0;
+    const photoCount = book.photoCount ?? book.images?.length ?? 0;
+    if (haveImages >= photoCount && haveImages > 0) return undefined;
+    getListingById(book.id)
+      .then((full) => {
+        if (alive && full) {
+          setBookData((b) => ({
+            ...b,
+            ...full,
+            images: full.images?.length ? full.images : b.images,
+          }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [book]);
+
+  const convId = makeConvId({
+    ...book,
+    buyerEmail: book.buyerEmail || user?.email || '',
+  });
 
   const sellerEmail = book.sellerEmail || "";
   const autoRole =
@@ -98,29 +127,14 @@ function ContactModal({ book, onClose }) {
     setOfferPrice("");
     setOfferMode(false);
     toast(`₹${price} offer sent`);
-    addNotification({
-      kind: "offer",
-      title: effectiveRole === "seller" ? `Price Offer: ₹${price}` : `Naya Buyer Offer: ₹${price}`,
-      body: `"${book.title}" — ${effectiveRole === "seller" ? "seller made an offer — accept/decline" : "buyer made an offer"}`,
-    }).catch(() => {});
   };
 
   const respondOffer = (msg, status) => {
     setOfferStatus(convId, msg.id, status).catch(() => {});
     if (status === "accepted") {
       toast(`Deal! Fixed at ₹${msg.price}`);
-      addNotification({
-        kind: "deal",
-        title: `Deal Fix: ₹${msg.price}`,
-        body: `"${book.title}" — offer accepted, plan pickup with seller`,
-      }).catch(() => {});
     } else {
       toast("Offer declined", "info");
-      addNotification({
-        kind: "info",
-        title: "Offer Declined",
-        body: `"${book.title}" — offer declined, continue negotiation`,
-      }).catch(() => {});
     }
   };
 
@@ -201,9 +215,9 @@ function ContactModal({ book, onClose }) {
           )}
         </div>
 
-        {book.images && book.images.length > 0 && (
+        {(bookData.images?.length > 0 || bookData.thumbs?.length > 0) && (
           <div className="flex gap-2 overflow-x-auto px-4 sm:px-6 py-3 border-b border-gray-50 shrink-0">
-            {book.images.map((src, i) => (
+            {(bookData.images?.length ? bookData.images : bookData.thumbs || []).map((src, i) => (
               <button
                 key={i}
                 type="button"
@@ -211,7 +225,13 @@ function ContactModal({ book, onClose }) {
                 aria-label={`View photo ${i + 1}`}
                 className="shrink-0 rounded-xl overflow-hidden ring-1 ring-gray-200 hover:ring-emerald-400 transition-all"
               >
-                <img src={src} alt={`Photo ${i + 1}`} className="w-16 h-16 object-cover" />
+                <img
+                  src={src}
+                  alt={`Photo ${i + 1}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-16 h-16 object-cover"
+                />
               </button>
             ))}
           </div>

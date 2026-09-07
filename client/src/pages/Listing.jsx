@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { addListing } from '../utils/listingStore'
 import { addNotification } from '../utils/notificationStore'
-import { fileToResizedDataUrl } from '../utils/imageResize'
+import { fileToResizedDataUrl, fileToThumbDataUrl } from '../utils/imageResize'
 
 const CATEGORIES = ['Textbooks', 'Competitive', 'Stories', 'Novels', 'Motivational']
 
@@ -61,6 +61,7 @@ export default function Listing() {
   const [whatsappSame, setWhatsappSame] = useState(true)
   const [whatsapp, setWhatsapp] = useState('')
   const [images, setImages] = useState([])
+  const [thumbs, setThumbs] = useState([])
   const [photoBusy, setPhotoBusy] = useState(false)
   const [coords, setCoords] = useState(null)
 
@@ -100,18 +101,28 @@ export default function Listing() {
     }
     setPhotoBusy(true)
     const resized = []
+    const thumbs = []
     for (const f of files.slice(0, slots)) {
       try {
-        resized.push(await fileToResizedDataUrl(f))
+        const [full, thumb] = await Promise.all([
+          fileToResizedDataUrl(f),
+          fileToThumbDataUrl(f),
+        ])
+        resized.push(full)
+        thumbs.push(thumb)
       } catch {
         toast('Failed to read one photo — try again', 'error')
       }
     }
     setImages((prev) => [...prev, ...resized])
+    setThumbs((prev) => [...prev, ...thumbs])
     setPhotoBusy(false)
   }
 
-  const removeImage = (idx) => setImages((prev) => prev.filter((_, i) => i !== idx))
+  const removeImage = (idx) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx))
+    setThumbs((prev) => prev.filter((_, i) => i !== idx))
+  }
 
   const isValidPhone = (val) => /^[6-9]\d{9}$/.test(val.replace(/\D/g, ''))
 
@@ -157,6 +168,8 @@ export default function Listing() {
       sellerName: user?.name || '',
       sellerEmail: user?.email || '',
       images,
+      thumb: thumbs[0] || '',
+      thumbs,
     }
     if (isSell) listing.sellDiscount = sellDiscount
     if (isRent) {

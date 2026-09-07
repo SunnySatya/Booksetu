@@ -63,8 +63,14 @@ const Cart = () => {
                   className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-4"
                 >
                   <div className="w-16 h-20 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-emerald-50 to-teal-50">
-                    {book.images && book.images[0] ? (
-                      <img src={book.images[0]} alt={book.title} className="w-full h-full object-cover" />
+                    {(book.images?.[0] || book.thumb) ? (
+                      <img
+                        src={book.images?.[0] || book.thumb}
+                        alt={book.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <BookOpen className="w-6 h-6 text-emerald-300" />

@@ -1,4 +1,4 @@
-export const fileToResizedDataUrl = (file, maxW = 720, quality = 0.72) =>
+const canvasOf = (file, maxW) =>
   new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
@@ -11,7 +11,7 @@ export const fileToResizedDataUrl = (file, maxW = 720, quality = 0.72) =>
       canvas.height = h
       canvas.getContext('2d').drawImage(img, 0, 0, w, h)
       URL.revokeObjectURL(url)
-      resolve(canvas.toDataURL('image/jpeg', quality))
+      resolve(canvas)
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
@@ -19,3 +19,13 @@ export const fileToResizedDataUrl = (file, maxW = 720, quality = 0.72) =>
     }
     img.src = url
   })
+
+export const fileToResizedDataUrl = async (file, maxW = 640, quality = 0.62) => {
+  const canvas = await canvasOf(file, maxW)
+  return canvas.toDataURL('image/jpeg', quality)
+}
+
+export const fileToThumbDataUrl = async (file, maxW = 240, quality = 0.55) => {
+  const canvas = await canvasOf(file, maxW)
+  return canvas.toDataURL('image/jpeg', quality)
+}

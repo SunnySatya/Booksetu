@@ -5,8 +5,16 @@ export const CHAT_EVENT = 'bs_chat_update'
 const dispatchUpdate = () =>
   window.dispatchEvent(new CustomEvent(CHAT_EVENT))
 
-export const makeConvId = (book) =>
-  encodeURIComponent(`${book.title}__${book.seller}`)
+export const makeConvId = (book) => {
+  const key = [
+    book.title,
+    book.seller,
+    book.buyerEmail || '',
+  ]
+    .filter(Boolean)
+    .join('__')
+  return encodeURIComponent(key)
+}
 
 export const getMessages = async (convId) => {
   const data = await api.get(

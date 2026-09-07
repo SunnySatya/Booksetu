@@ -424,8 +424,14 @@ const Admin = () => {
             {listings.map((l) => (
               <div key={l.id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3">
                 <div className="w-12 h-14 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
-                  {l.images && l.images[0] ? (
-                    <img src={l.images[0]} alt="" className="w-full h-full object-cover" />
+                  {(l.images?.[0] || l.thumb) ? (
+                    <img
+                      src={l.images?.[0] || l.thumb}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <BookOpen className="w-5 h-5 text-emerald-300" />
                   )}
@@ -625,7 +631,7 @@ const Admin = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setChatBook({ title: c.title, seller: c.seller, sellerEmail: c.sellerEmail })}
+                  onClick={() => setChatBook({ conversationId: c.key, title: c.title, seller: c.seller, sellerEmail: c.sellerEmail, buyerEmail: c.buyerEmail })}
                   className="shrink-0 text-[11px] font-semibold text-emerald-600 hover:underline mr-1"
                 >
                   View

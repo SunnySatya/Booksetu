@@ -30,6 +30,8 @@ const listingSchema = new mongoose.Schema(
     sellerName: { type: String, default: '' },
     sellerEmail: { type: String, default: '', index: true },
     images: { type: [String], default: [] },
+    thumb: { type: String, default: '' },
+    thumbs: { type: [String], default: [] },
     featured: { type: Boolean, default: false, index: true },
     featuredUntil: { type: Date, default: null },
   },

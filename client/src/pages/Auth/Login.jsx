@@ -1,9 +1,21 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { LogIn, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react'
+import { LogIn, Mail, Lock, MapPin, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { validateEmail, validatePassword } from '../../utils/validation'
 import { useToast } from '../../components/Toast'
+
+const locMessage = (err) => {
+  if (err === 'insecure-context')
+    return 'Location needs a secure (HTTPS) connection — please open this site over https or the app.'
+  if (err === 'timeout')
+    return 'Could not pinpoint you in time. Turn on GPS/WiFi and retry, or enter your city manually below.'
+  if (err === 'unavailable')
+    return 'Your location is unavailable. Turn on location/GPS on your phone and retry, or enter your city manually below.'
+  if (err === 'denied' || err === null)
+    return 'Location permission was blocked. Please allow location in your browser/phone settings, or enter your city manually below.'
+  return ''
+}
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -13,7 +25,9 @@ const Login = () => {
   const [showLocPopup, setShowLocPopup] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locError, setLocError] = useState('')
-  const { login, requestLocation } = useAuth()
+  const [manualCity, setManualCity] = useState('')
+  const [manualMode, setManualMode] = useState(false)
+  const { login, requestLocation, locationError, setManualLocation } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const routeState = useLocation().state
@@ -46,9 +60,19 @@ const Login = () => {
     const loc = await requestLocation()
     if (!loc) {
       setLocating(false)
-      setLocError('Location is required — this is how we show nearby books.')
+      setLocError(locMessage(locationError))
       return
     }
+    navigate(routeState?.from || '/', { state: routeState })
+  }
+
+  const proceedManually = async () => {
+    const city = manualCity.trim()
+    if (!city) {
+      setLocError('Please enter your city / area to continue')
+      return
+    }
+    setManualLocation(city)
     navigate(routeState?.from || '/', { state: routeState })
   }
 
@@ -135,15 +159,40 @@ const Login = () => {
               <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-4">{locError}</p>
             )}
             {locating ? (
-              <button disabled className="w-full bg-emerald-300 text-white py-3.5 rounded-xl font-bold cursor-not-allowed">
+              <button disabled className="w-full bg-emerald-300 text-white py-3.5 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
                 Detecting location...
               </button>
+            ) : manualMode ? (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={manualCity}
+                  onChange={(e) => setManualCity(e.target.value)}
+                  placeholder="Your city / area (e.g. Indore)"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                />
+                <button onClick={proceedManually} className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+                  Continue
+                </button>
+                <button
+                  onClick={() => { setManualMode(false); setLocError(''); proceedWithLocation(); }}
+                  className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Try Location Again
+                </button>
+              </div>
             ) : (
-              <button onClick={proceedWithLocation} className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
-                Allow & Continue
-              </button>
+              <div className="space-y-3">
+                <button onClick={proceedWithLocation} className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+                  Allow & Continue
+                </button>
+                <button onClick={() => setManualMode(true)} className="w-full text-sm text-gray-500 hover:text-emerald-600 transition-colors">
+                  Can't enable location? Enter your city instead
+                </button>
+              </div>
             )}
-            {!locating && (
+            {!locating && !manualMode && (
               <button onClick={() => setShowLocPopup(false)} className="mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors">
                 Cancel
               </button>

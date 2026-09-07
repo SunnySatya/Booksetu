@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
       return null
     }
   })
+  const [locationError, setLocationError] = useState('')
 
   useEffect(() => {
     if (!localStorage.getItem('bs_token')) return undefined
@@ -34,10 +35,21 @@ export function AuthProvider({ children }) {
       const loc = await getFullLocation()
       localStorage.setItem('bs_user_location', JSON.stringify(loc))
       setLocation(loc)
+      setLocationError('')
       return loc
-    } catch {
+    } catch (e) {
+      const msg = e?.message || 'denied'
+      setLocationError(msg)
       return null
     }
+  }
+
+  const setManualLocation = (city) => {
+    const loc = { address: city }
+    localStorage.setItem('bs_user_location', JSON.stringify(loc))
+    setLocation(loc)
+    setLocationError('')
+    return loc
   }
 
   const login = async ({ email, password }) => {
@@ -80,7 +92,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ isLoggedIn, booting, user, location, login, register, logout, updateUser, requestLocation }}
+      value={{ isLoggedIn, booting, user, location, locationError, login, register, logout, updateUser, requestLocation, setManualLocation }}
     >
       {children}
     </AuthContext.Provider>

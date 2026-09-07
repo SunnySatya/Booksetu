@@ -68,6 +68,18 @@ const Home = () => {
     value: userLocation,
     request: locateMe,
   } = useGeolocation();
+
+  // Auto-request GPS on the home page if the user has no coords (e.g.
+  // they skipped location at login or entered a city manually).  This
+  // enables distance sorting so nearby books show first.
+  useEffect(() => {
+    if (!userLoc?.lat && locStatus === 'idle') locateMe();
+  }, []);
+
+  // Use the best available coordinates: live geolocation hook wins,
+  // otherwise fall back to whatever was saved at login/signup.
+  const effectiveLat = userLocation?.lat ?? userLoc?.lat ?? undefined;
+  const effectiveLng = userLocation?.lng ?? userLoc?.lng ?? undefined;
   const [payBook, setPayBook] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
 
@@ -96,15 +108,13 @@ const Home = () => {
 
   useEffect(() => {
     let alive = true;
-    const lat = userLoc?.lat ?? undefined;
-    const lng = userLoc?.lng ?? undefined;
-    getAllListings(lat, lng)
+    getAllListings(effectiveLat, effectiveLng, true)
       .then((l) => alive && setServerListings(l))
       .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [userLoc?.lat, userLoc?.lng]);
+  }, [effectiveLat, effectiveLng]);
 
   useEffect(() => {
     let alive = true;
@@ -185,6 +195,7 @@ const Home = () => {
   };
 
   const userListBooks = serverListings.map((l) => ({
+    id: l.id || l._id,
     title: l.title,
     price:
       l.listingType === "exchange"
@@ -203,6 +214,9 @@ const Home = () => {
     contact: l.contact,
     listingType: l.listingType || "single",
     images: l.images || [],
+    thumb: l.thumb || "",
+    thumbs: l.thumbs || [],
+    photoCount: l.photoCount ?? (l.images || []).length,
     featured: !!l.featured,
     rentFeePercent: l.rentFeePercent,
     rentDays: l.rentDays,
@@ -385,6 +399,24 @@ const Home = () => {
         </div>
       </section>
 
+      {!effectiveLat && locStatus !== 'denied' && locStatus !== 'loading' && locStatus !== 'granted' && (
+        <div className="max-w-3xl mx-auto mt-8 px-4">
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <MapPin className="w-5 h-5 text-amber-600 shrink-0" />
+            <p className="text-sm text-amber-800 flex-1">
+              Enable location to see books sorted by nearest first — just like OLX!
+            </p>
+            <button
+              type="button"
+              onClick={locateMe}
+              className="shrink-0 bg-amber-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              Enable
+            </button>
+          </div>
+        </div>
+      )}
+
       <section className="bg-white pt-10 md:pt-16 pb-10 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
@@ -476,7 +508,7 @@ const Home = () => {
               <>
                 <p className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
                   <MapPin className="w-3.5 h-3.5" />
-                  {locStatus === "granted"
+                  {effectiveLat
                     ? `${results.length} books found — nearest sellers first`
                     : `${results.length} books found`}
                 </p>

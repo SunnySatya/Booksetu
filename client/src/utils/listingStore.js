@@ -2,16 +2,23 @@ import { api } from '../api'
 
 const map = (l) => ({ ...l, id: l.id ?? l._id })
 
-export const getAllListings = async (lat, lng) => {
+export const getAllListings = async (lat, lng, light = false) => {
   let path = '/listings'
   const params = []
   if (lat != null && lng != null) {
     params.push(`lat=${lat}`, `lng=${lng}`)
   }
+  if (light) params.push('light=1')
   if (params.length) path += '?' + params.join('&')
   const data = await api.get(path)
   const arr = Array.isArray(data) ? data : (data.listings || [])
   return arr.map(map)
+}
+
+export const getListingById = async (id) => {
+  if (!id) return null
+  const data = await api.get(`/listings/${id}`)
+  return map(data)
 }
 
 export const getListingsBySeller = async (email) => {

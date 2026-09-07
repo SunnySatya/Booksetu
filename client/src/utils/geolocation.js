@@ -1,16 +1,52 @@
-export const getCurrentPosition = () =>
+const isSecureContext = () =>
+  typeof window !== 'undefined' &&
+  (window.isSecureContext ||
+    ['https:', 'wss:'].includes(window.location?.protocol))
+
+const oneShot = (opts) =>
   new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      const err = new Error('unsupported')
-      return reject(err)
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => reject(new Error('denied')),
-      { enableHighAccuracy: true, timeout: 10000 }
-    )
+    navigator.geolocation.getCurrentPosition(resolve, reject, opts)
   })
+
+const errorCode = (err) => {
+  // GeolocationPositionError: 1=denied, 2=unavailable, 3=timeout
+  if (err && typeof err.code === 'number') return err.code
+  return null
+}
+
+export const getCurrentPosition = async () => {
+  if (!navigator.geolocation) {
+    throw new Error('unsupported')
+  }
+  if (!isSecureContext()) {
+    throw new Error('insecure-context')
+  }
+  // 1) Try high accuracy (GPS) — preferred, but can be slow on phones.
+  try {
+    const pos = await oneShot({
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 60000,
+    })
+    return { lat: pos.coords.latitude, lng: pos.coords.longitude }
+  } catch (err) {
+    // 2) Fall back to network/WiFi accuracy — resolves quickly in cities
+    //    even when the phone's GPS fix takes too long.
+    try {
+      const pos = await oneShot({
+        enableHighAccuracy: false,
+        timeout: 20000,
+        maximumAge: 300000,
+      })
+      return { lat: pos.coords.latitude, lng: pos.coords.longitude }
+    } catch (err2) {
+      const code = errorCode(err2)
+      if (code === 3) throw new Error('timeout')
+      if (code === 2) throw new Error('unavailable')
+      throw new Error('denied')
+    }
+  }
+}
 
 export const reverseGeocode = async (lat, lng, zoom = 16) => {
   try {

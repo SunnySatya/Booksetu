@@ -1,8 +1,18 @@
 import { Router } from 'express'
 import Notification from '../models/Notification.js'
-import { attachUser, adminRequired } from '../middleware/auth.js'
+import { attachUser, authRequired, adminRequired } from '../middleware/auth.js'
 
 const router = Router()
+
+const emitTo = (app, target) => {
+  const io = app?.get('io')
+  if (!io) return
+  if (target) {
+    io.to(`user:${String(target).toLowerCase()}`).emit('notification:new')
+  } else {
+    io.emit('notification:new')
+  }
+}
 
 router.get('/', attachUser, async (req, res) => {
   try {
@@ -15,17 +25,37 @@ router.get('/', attachUser, async (req, res) => {
   }
 })
 
-router.post('/', adminRequired, async (req, res) => {
+router.post('/', authRequired, async (req, res) => {
   try {
     const { title, body, kind, to } = req.body || {}
     if (!title) return res.status(400).json({ message: 'Title is required' })
+    const safeKind = ['info', 'offer', 'deal', 'admin'].includes(kind) ? kind : 'info'
+
+    // Non-admins may only create notifications targeted to themselves
+    // (e.g. "your listing is live"). Everything else is admin-only.
+    if (!req.user.isAdmin) {
+      const own = String(req.user.email || '').toLowerCase()
+      const target = to ? String(to).toLowerCase() : own
+      if (target !== own) {
+        return res.status(403).json({ message: 'Admin access required' })
+      }
+      const n = await Notification.create({
+        title,
+        body: body || '',
+        kind: safeKind,
+        to: own,
+      })
+      emitTo(req.app, own)
+      return res.status(201).json(Notification.mapOut(n))
+    }
+
     const n = await Notification.create({
       title,
       body: body || '',
-      kind: ['info', 'offer', 'deal', 'admin'].includes(kind) ? kind : 'info',
+      kind: safeKind,
       to: to || null,
     })
-    req.app.get('io')?.emit('notification:new')
+    emitTo(req.app, to || null)
     res.status(201).json(Notification.mapOut(n))
   } catch (e) {
     res.status(400).json({ message: e.message || 'Failed to save notification' })

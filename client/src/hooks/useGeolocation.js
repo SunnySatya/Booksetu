@@ -13,7 +13,7 @@ const useGeolocation = () => {
       setStatus('granted')
       return loc
     } catch (e) {
-      setStatus(e.message === 'unsupported' ? 'unsupported' : 'denied')
+      setStatus(e?.message || 'denied')
       return null
     }
   }, [])

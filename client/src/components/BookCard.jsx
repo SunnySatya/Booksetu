@@ -51,16 +51,18 @@ const BookCard = ({ book, onClick, onContact }) => {
             <Star className="w-3 h-3 fill-yellow-900" /> Featured
           </span>
         )}
-        {book.images && book.images.length > 0 ? (
+        {(book.images?.length || book.thumb) ? (
           <>
             <img
-              src={book.images[0]}
+              src={book.thumb || book.images?.[0]}
               alt={book.title}
-              className="w-full aspect-[4/3] object-cover"
+              loading="lazy"
+              decoding="async"
+              className="w-full aspect-[4/3] object-cover bg-gray-50"
             />
-            {book.images.length > 1 && (
+            {(book.photoCount ?? book.images?.length ?? 0) > 1 && (
               <span className="absolute bottom-2 left-3 inline-flex items-center gap-1 text-[11px] font-semibold bg-black/55 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">
-                <Camera className="w-3 h-3" /> {book.images.length}
+                <Camera className="w-3 h-3" /> {book.photoCount ?? book.images.length}
               </span>
             )}
           </>

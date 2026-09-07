@@ -197,7 +197,7 @@ const Profile = () => {
                     <div key={c.key} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-emerald-50 rounded-xl transition-colors">
                       <button
                         type="button"
-                        onClick={() => setChatBook({ title: c.title, seller: c.seller, sellerEmail: c.sellerEmail })}
+                        onClick={() => setChatBook({ conversationId: c.key, title: c.title, seller: c.seller, sellerEmail: c.sellerEmail, buyerEmail: c.buyerEmail })}
                         className="flex items-center gap-3 flex-1 min-w-0 text-left"
                       >
                         <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
@@ -258,8 +258,14 @@ const Profile = () => {
                   {cart.slice(0, 4).map((b, i) => (
                     <div key={`${b.title}-${i}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                       <div className="w-11 h-14 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
-                        {b.images && b.images[0] ? (
-                          <img src={b.images[0]} alt={b.title} className="w-full h-full object-cover" />
+                        {(b.images?.[0] || b.thumb) ? (
+                          <img
+                            src={b.images?.[0] || b.thumb}
+                            alt={b.title}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <BookOpen className="w-5 h-5 text-emerald-300" />
                         )}
