@@ -2,6 +2,7 @@ import { Router } from 'express'
 import Message from '../models/Message.js'
 import Notification from '../models/Notification.js'
 import { authRequired, adminRequired } from '../middleware/auth.js'
+import { notifyUser as pushNotifyUser } from '../services/pushService.js'
 
 const router = Router()
 
@@ -18,6 +19,11 @@ const notifyUser = async (app, email, data) => {
     await Notification.create({ kind: data.kind || 'info', title: data.title, body: data.body || '', to: email })
     const io = app?.get('io')
     if (io) io.to(`user:${String(email).toLowerCase()}`).emit('notification:new')
+    await pushNotifyUser(email, {
+      title: data.title,
+      body: data.body || '',
+      url: '/profile',
+    })
   } catch {}
 }
 

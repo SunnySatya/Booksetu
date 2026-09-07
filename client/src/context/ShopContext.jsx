@@ -1,12 +1,15 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '../components/Toast'
 import { useAuth } from './AuthContext'
 import { api } from '../api'
 
 const ShopContext = createContext(null)
 
-const CART_KEY = 'bs_cart'
-const WISHLIST_KEY = 'bs_wishlist'
+const BASE_CART_KEY = 'bs_cart'
+const BASE_WISHLIST_KEY = 'bs_wishlist'
+
+const keyFor = (base, email) =>
+  email ? `${base}_${String(email).toLowerCase()}` : base
 
 const readLocal = (key) => {
   try {
@@ -21,30 +24,50 @@ const sameBook = (a, b) => a.title === b.title && a.seller === b.seller && (a.se
 export function ShopProvider({ children }) {
   const toast = useToast()
   const { user, isLoggedIn } = useAuth()
-  const [cart, setCart] = useState(() => readLocal(CART_KEY))
-  const [wishlist, setWishlist] = useState(() => readLocal(WISHLIST_KEY))
-  const syncedRef = useRef(false)
+  const email = user?.email || ''
+  const syncedRef = useRef({})
+
+  // Each user gets their own localStorage keys so one account's cart /
+  // wishlist never leaks into another user's view on a shared device.
+  const cartKey = useMemo(() => keyFor(BASE_CART_KEY, email), [email])
+  const wishlistKey = useMemo(() => keyFor(BASE_WISHLIST_KEY, email), [email])
+
+  const [cart, setCart] = useState(() => readLocal(cartKey))
+  const [wishlist, setWishlist] = useState(() => readLocal(wishlistKey))
+  const [initializedEmail, setInitializedEmail] = useState(email)
 
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart))
-  }, [cart])
+    localStorage.setItem(cartKey, JSON.stringify(cart))
+  }, [cart, cartKey])
 
   useEffect(() => {
-    localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist))
-  }, [wishlist])
+    localStorage.setItem(wishlistKey, JSON.stringify(wishlist))
+  }, [wishlist, wishlistKey])
 
-  // On login: fetch server data, merge with local, push merged back
+  // Reset local state whenever the logged-in user changes so we never show
+  // the previous account's items.
   useEffect(() => {
-    if (!isLoggedIn || syncedRef.current) return
-    syncedRef.current = true
+    if (email === initializedEmail) return
+    setInitializedEmail(email)
+    setCart(readLocal(keyFor(BASE_CART_KEY, email)))
+    setWishlist(readLocal(keyFor(BASE_WISHLIST_KEY, email)))
+    // Disable merge-on-switch: we should not carry one user's items into
+    // another user's freshly-loaded state.
+    syncedRef.current = {}
+  }, [email, initializedEmail])
+
+  // On login: fetch server data, merge with local (same user), push back.
+  useEffect(() => {
+    if (!isLoggedIn || !email || syncedRef.current[email]) return
+    syncedRef.current[email] = true
     ;(async () => {
       try {
         const [serverCart, serverWishlist] = await Promise.all([
           api.get('/cart'),
           api.get('/wishlist'),
         ])
-        const localCart = readLocal(CART_KEY)
-        const localWish = readLocal(WISHLIST_KEY)
+        const localCart = readLocal(keyFor(BASE_CART_KEY, email))
+        const localWish = readLocal(keyFor(BASE_WISHLIST_KEY, email))
 
         const merge = (server, local) => {
           const merged = [...server]
@@ -62,7 +85,6 @@ export function ShopProvider({ children }) {
         setCart(finalCart)
         setWishlist(finalWish)
 
-        // Push merged data back to server
         await Promise.all([
           api.put('/cart', { items: finalCart }),
           api.put('/wishlist', { items: finalWish }),
@@ -71,11 +93,11 @@ export function ShopProvider({ children }) {
         // Stay with localStorage data
       }
     })()
-  }, [isLoggedIn])
+  }, [isLoggedIn, email])
 
   // Reset sync flag on logout
   useEffect(() => {
-    if (!isLoggedIn) syncedRef.current = false
+    if (!isLoggedIn) syncedRef.current = {}
   }, [isLoggedIn])
 
   const serverAdd = useCallback(async (endpoint, item) => {

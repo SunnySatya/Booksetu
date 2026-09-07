@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import Notification from '../models/Notification.js'
 import { attachUser, authRequired, adminRequired } from '../middleware/auth.js'
+import { notifyUser } from '../services/pushService.js'
 
 const router = Router()
 
@@ -14,10 +15,23 @@ const emitTo = (app, target) => {
   }
 }
 
+const broadcast = async (app, target, n) => {
+  emitTo(app, target)
+  try {
+    await notifyUser(target || null, {
+      title: n.title,
+      body: n.body,
+      url: (target ? '/profile' : '/'),
+    })
+  } catch {}
+}
+
 router.get('/', attachUser, async (req, res) => {
   try {
     const email = req.user?.email
-    const query = email ? { $or: [{ to: null }, { to: email }] } : { to: null }
+    const query = email
+      ? { $or: [{ to: null }, { to: { $regex: `^${String(email).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }] }
+      : { to: null }
     const items = await Notification.find(query).sort({ at: -1 }).limit(60)
     res.json(items.map(Notification.mapOut))
   } catch (e) {
@@ -45,7 +59,7 @@ router.post('/', authRequired, async (req, res) => {
         kind: safeKind,
         to: own,
       })
-      emitTo(req.app, own)
+      await broadcast(req.app, own, n)
       return res.status(201).json(Notification.mapOut(n))
     }
 
@@ -55,7 +69,11 @@ router.post('/', authRequired, async (req, res) => {
       kind: safeKind,
       to: to || null,
     })
-    emitTo(req.app, to || null)
+    if (to) {
+      await broadcast(req.app, to, n)
+    } else {
+      emitTo(req.app, null)
+    }
     res.status(201).json(Notification.mapOut(n))
   } catch (e) {
     res.status(400).json({ message: e.message || 'Failed to save notification' })

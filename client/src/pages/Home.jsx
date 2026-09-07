@@ -399,24 +399,7 @@ const Home = () => {
         </div>
       </section>
 
-      {!effectiveLat && locStatus !== 'denied' && locStatus !== 'loading' && locStatus !== 'granted' && (
-        <div className="max-w-3xl mx-auto mt-8 px-4">
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            <MapPin className="w-5 h-5 text-amber-600 shrink-0" />
-            <p className="text-sm text-amber-800 flex-1">
-              Enable location to see books sorted by nearest first — just like OLX!
-            </p>
-            <button
-              type="button"
-              onClick={locateMe}
-              className="shrink-0 bg-amber-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-700 transition-colors"
-            >
-              Enable
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* Location query-based banner removed */}
       <section className="bg-white pt-10 md:pt-16 pb-10 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
@@ -532,7 +515,7 @@ const Home = () => {
               Browse by Category
             </h2>
             <p className="text-gray-500">
-              Find books for every subject and class
+              Find your favorite books near you 
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-8">

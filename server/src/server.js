@@ -18,6 +18,7 @@ import notificationRoutes from './routes/notifications.js'
 import contentRoutes from './routes/content.js'
 import cartRoutes from './routes/cart.js'
 import wishlistRoutes from './routes/wishlist.js'
+import pushRoutes from './routes/push.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -90,6 +91,7 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/content', contentRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/wishlist', wishlistRoutes)
+app.use('/api/push', pushRoutes)
 
 app.use('/api', (_req, res) => {
   res.status(404).json({ message: 'API route not found' })

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "./Toast";
 import useChat from "../hooks/useChat";
 import { getListingById } from "../utils/listingStore";
+import { setupPushNotifications } from "../utils/push";
 import { makeConvId, sendMessage, setOfferStatus, deleteConversationByKey } from "../utils/chatStore";
 
 function ContactModal({ book, onClose }) {
@@ -94,9 +95,8 @@ function ContactModal({ book, onClose }) {
   }, [messages, effectiveRole]);
 
   useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
+    // Ask on open (user action) so push notifications can be enabled.
+    setupPushNotifications().catch(() => {});
   }, []);
 
   const sellerPhone = book?.contact?.phone || "";

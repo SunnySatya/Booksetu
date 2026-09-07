@@ -10,6 +10,12 @@ const notificationSchema = new mongoose.Schema({
 
 notificationSchema.index({ createdAt: -1 })
 
+// Normalize the recipient email to lowercase so targeted notifications always
+// match the lowercased JWT email on read, regardless of input casing.
+notificationSchema.pre('save', function () {
+  if (this.to) this.to = String(this.to).toLowerCase().trim()
+})
+
 const map = (n) => ({
   id: String(n._id),
   title: n.title,

@@ -3,6 +3,7 @@ import Listing from '../models/Listing.js'
 import User from '../models/User.js'
 import Notification from '../models/Notification.js'
 import { authRequired } from '../middleware/auth.js'
+import { notifyUser } from '../services/pushService.js'
 
 const router = Router()
 
@@ -52,6 +53,13 @@ async function notifyNearbyUsers(app, listing) {
       })),
     )
     matched.forEach((u) => emitToUser(app, u.email))
+    matched.forEach((u) => {
+      notifyUser(u.email, {
+        title: 'New book in your area!',
+        body: `"${listing.title}" is now available in ${listing.location} for ${priceLabel}.`,
+        url: '/',
+      }).catch(() => {})
+    })
   } catch {}
 }
 

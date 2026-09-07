@@ -34,3 +34,23 @@ export const markAllRead = () => {
   localStorage.setItem(KEY, String(Date.now()))
   dispatchUpdate()
 }
+
+const SEEN_KEY = 'bs_notifications_seen'
+
+export const getSeenIds = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'))
+  } catch {
+    return new Set()
+  }
+}
+
+export const markSeenId = (id) => {
+  try {
+    const seen = getSeenIds()
+    seen.add(id)
+    // Keep only recent ids to avoid unbounded growth.
+    const arr = [...seen].slice(-50)
+    localStorage.setItem(SEEN_KEY, JSON.stringify(arr))
+  } catch {}
+}

@@ -18,6 +18,7 @@ import { ToastProvider } from './components/Toast'
 import { ShopProvider, useShop } from './context/ShopContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import NotificationBell from './components/NotificationBell'
+import NotificationToaster from './components/NotificationToaster'
 import SeoManager from './components/SeoManager'
 import { initSocket } from './socket'
 import { BookOpen, Menu, X, Heart, ShoppingCart } from 'lucide-react'
@@ -136,6 +137,7 @@ export default function App() {
           <div className="min-h-screen bg-gray-50 text-gray-900">
             <SeoManager />
             <Navbar />
+            <NotificationToaster />
             <main>
               <Suspense fallback={<PageLoader />}>
                 <Routes>

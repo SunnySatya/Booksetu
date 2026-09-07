@@ -16,3 +16,9 @@ services:
         sync: false
       - key: BREVO_SENDER_EMAIL
         value: sunnysatya4@gmail.com
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:sunnysatya4@gmail.com
