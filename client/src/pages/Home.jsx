@@ -82,6 +82,8 @@ const Home = () => {
   const effectiveLng = userLocation?.lng ?? userLoc?.lng ?? undefined;
   const [payBook, setPayBook] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const [showAllTrending, setShowAllTrending] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -580,15 +582,18 @@ const Home = () => {
               ? `Books near you — ${userLoc.address}`
               : "Showing books from your area"}
           </p>
-          <a
-            href="#"
-            className="inline-flex items-center gap-1 text-emerald-600 font-semibold hover:underline mt-3"
-          >
-            View All <ArrowRight className="w-4 h-4" />
-          </a>
+          {displayBooks.length > 6 && (
+            <button
+              type="button"
+              onClick={() => setShowAllFeatured((v) => !v)}
+              className="inline-flex items-center gap-1 text-emerald-600 font-semibold hover:underline mt-3"
+            >
+              {showAllFeatured ? "Show Less" : "View All"} <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayBooks.map((book, i) => (
+          {(showAllFeatured ? displayBooks : displayBooks.slice(0, 6)).map((book, i) => (
             <BookCard
               key={i}
               book={book}
@@ -608,15 +613,18 @@ const Home = () => {
             <p className="text-gray-500">
               Most viewed books this week near you
             </p>
-            <a
-              href="#"
-              className="inline-flex items-center gap-1 text-emerald-600 font-semibold hover:underline mt-3"
-            >
-              View All <ArrowRight className="w-4 h-4" />
-            </a>
+            {trendingBooks.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setShowAllTrending((v) => !v)}
+                className="inline-flex items-center gap-1 text-emerald-600 font-semibold hover:underline mt-3"
+              >
+                {showAllTrending ? "Show Less" : "View All"} <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
-            {trendingBooks.map((book) => (
+            {(showAllTrending ? trendingBooks : trendingBooks.slice(0, 5)).map((book) => (
               <div
                 key={book.rank}
                 className="relative bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border border-orange-100 p-3 sm:p-5 hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden group"
